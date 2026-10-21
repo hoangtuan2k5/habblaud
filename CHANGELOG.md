@@ -25,6 +25,12 @@ do meio (0.**3**.0).
   Mensagens, aprovações, histórico de conversa, subagentes e uso de tokens ainda não são integrados.
   Agentes do Antigravity ficam fora do Habblaud World, cujo protocolo ainda não aceita essa ferramenta.
 
+### Corrigido
+
+- **Hook de observação do Antigravity:** `PreToolUse` responde com `decision: "allow"`, conforme o contrato
+  oficial, para delegar à próxima regra ou à política padrão; nunca usa `auto_approve`. Sem Habblaud ou com
+  entrada inválida, o hook continua sem interromper o agente. Teste executa o processo real nos dois casos.
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido

@@ -19,4 +19,5 @@ try {
 } catch {
   // The office being offline must never interrupt the agent.
 }
-process.stdout.write('{}\n');
+// 'allow' delegates to the next hook/default policy; it never auto-approves a tool.
+process.stdout.write(process.argv[2] === 'PreToolUse' ? '{"decision":"allow"}\n' : '{}\n');
