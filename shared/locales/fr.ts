@@ -3290,4 +3290,10 @@ export const FR: Readonly<Record<string, string>> = {
   "Carimbo deixado na portaria: {0}": "Tampon laissé à l'accueil : {0}",
   "Entre no prédio ou chegue mais perto da porta para carimbar.": "Entrez dans l'immeuble ou approchez-vous de la porte pour tamponner.",
   "O carimbo não foi deixado. Tente de novo.": "Le tampon n'a pas été laissé. Réessayez.",
+  "Para responder, use o Antigravity": "Pour répondre, utilisez Antigravity",
+  "Abra o Claude Code, o Codex ou o Antigravity em qualquer projeto e veja seu agente chegar.": "Ouvrez Claude Code, Codex ou Antigravity dans un projet et regardez votre agent arriver.",
+  "eventos do Antigravity só são aceitos pelo próprio computador": "les événements Antigravity ne sont acceptés que depuis cet ordinateur",
+  "evento do Antigravity inválido": "événement Antigravity invalide",
+  "Antigravity: {0}": "Antigravity : {0}",
+  "Hooks do Antigravity atualizados: {0}": "Hooks Antigravity mis à jour : {0}",
 };

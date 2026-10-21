@@ -1,4 +1,5 @@
 // Fonte bitmap minúscula (3x5) para rótulos nítidos na página de prévia. Puro.
+// Acentos vietnamitas compostos usam até duas marcas empilhadas acima.
 // Acentos e til ficam 2 linhas ACIMA do glifo (y-3..y-2, com 1 linha de folga) e a cedilha 2 linhas
 // abaixo (y+5..y+6): reserve esse espaço ao posicionar rótulos com acentos.
 const GLYPHS: Readonly<Record<string, string>> = {
@@ -22,9 +23,14 @@ const MARKS = {
   circ: { dy: -3, rows: ['010', '101'] },
   tilde: { dy: -3, rows: ['011', '110'] },
   cedilla: { dy: 5, rows: ['010', '110'] },
+  breve: { dy: -3, rows: ['101', '010'] },
+  horn: { dy: -2, rows: ['001', '001'] },
+  hook: { dy: -3, rows: ['011', '001'] },
+  dot: { dy: 6, rows: ['010'] },
 } as const;
 
 type Mark = keyof typeof MARKS;
+const COMBINING: Readonly<Record<string, Mark>> = { '\u0301': 'acute', '\u0300': 'grave', '\u0302': 'circ', '\u0303': 'tilde', '\u0306': 'breve', '\u031b': 'horn', '\u0309': 'hook', '\u0323': 'dot' };
 
 const DIACRITIC: Readonly<Record<string, readonly [string, Mark]>> = {
   á: ['a', 'acute'], à: ['a', 'grave'], â: ['a', 'circ'], ã: ['a', 'tilde'],
@@ -34,24 +40,29 @@ const DIACRITIC: Readonly<Record<string, readonly [string, Mark]>> = {
 
 /** Largura em px de `text` desenhado por pixelText (3 px por letra + 1 px de espaço). */
 export function pixelTextWidth(text: string): number {
-  return Math.max(0, [...text].length * 4 - 1);
+  return Math.max(0, [...text.normalize('NFC')].length * 4 - 1);
 }
 
 /** Desenha texto em minúsculas (3x5 por letra, 1px de espaço, com acentos e cedilha) via fillRect. */
 export function pixelText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string): number {
   ctx.fillStyle = color;
   let cx = x;
-  for (const raw of text.toLowerCase()) {
+  for (const raw of text.normalize('NFC').toLowerCase()) {
     const dia = DIACRITIC[raw];
-    const ch = dia ? dia[0] : raw;
+    const decomposed = [...raw.normalize('NFD')];
+    const ch = dia ? dia[0] : raw === 'đ' ? 'd' : decomposed[0];
     const g = GLYPHS[ch] ?? GLYPHS[' '];
     for (let i = 0; i < 15; i++) if (g[i] === '1') ctx.fillRect(cx + (i % 3), y + Math.floor(i / 3), 1, 1);
-    if (dia) {
-      const m = MARKS[dia[1]];
+    const marks = dia ? [dia[1]] : decomposed.slice(1).map((c) => COMBINING[c]).filter((m): m is Mark => !!m);
+    let above = 0;
+    for (const mark of marks) {
+      const m = MARKS[mark];
+      const dy = m.dy < 0 ? m.dy - above++ * 3 : m.dy;
       m.rows.forEach((row, r) => {
-        for (let c = 0; c < 3; c++) if (row[c] === '1') ctx.fillRect(cx + c, y + m.dy + r, 1, 1);
+        for (let c = 0; c < 3; c++) if (row[c] === '1') ctx.fillRect(cx + c, y + dy + r, 1, 1);
       });
     }
+    if (raw === 'đ') ctx.fillRect(cx, y + 2, 3, 1);
     cx += 4;
   }
   return cx - x;

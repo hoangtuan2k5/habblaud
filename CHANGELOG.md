@@ -12,6 +12,12 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Interface em vietnamita:** opção “Tiếng Việt”, detecção de `vi`/`vi-VN`, datas e números em `vi-VN`,
+  dicionário completo dos textos atuais (interface, atividades, demonstração, scripts e mensagens do servidor).
+  `HABBLAUD_LANG=vi` traduz também as atividades vindas do servidor. Fontes da interface e caracteres do canvas
+  passam a aceitar as letras e os acentos vietnamitas, inclusive Unicode decomposto. O World continua com seu
+  protocolo atual: a interface local é vietnamita, mas o idioma enviado ao World é inglês.
+
 - **Antigravity no escritório local:** hooks de início, chamadas de modelo, ferramentas e fim de turno
   alimentam agentes e salas reais, sem alterar permissões. Instalação, remoção e verificação por
   `npm run antigravity:install|uninstall|status`; preserva outros hooks e faz backup antes de alterar.

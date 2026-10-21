@@ -3274,4 +3274,10 @@ export const ES: Readonly<Record<string, string>> = {
   "Carimbo deixado na portaria: {0}": "Sello dejado en la recepción: {0}",
   "Entre no prédio ou chegue mais perto da porta para carimbar.": "Entra al edificio o acércate más a la puerta para sellar.",
   "O carimbo não foi deixado. Tente de novo.": "El sello no se dejó. Inténtalo de nuevo.",
+  "Para responder, use o Antigravity": "Para responder, usa Antigravity",
+  "Abra o Claude Code, o Codex ou o Antigravity em qualquer projeto e veja seu agente chegar.": "Abre Claude Code, Codex o Antigravity en cualquier proyecto y mira llegar a tu agente.",
+  "eventos do Antigravity só são aceitos pelo próprio computador": "los eventos de Antigravity solo se aceptan desde este equipo",
+  "evento do Antigravity inválido": "evento de Antigravity no válido",
+  "Antigravity: {0}": "Antigravity: {0}",
+  "Hooks do Antigravity atualizados: {0}": "Hooks de Antigravity actualizados: {0}",
 };

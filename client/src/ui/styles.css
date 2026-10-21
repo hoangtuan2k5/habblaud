@@ -11147,3 +11147,6 @@ html.is-replay #world {
 .ui-world-chip__visitors[hidden] {
   display: none;
 }
+
+/* System fonts include the full Vietnamese alphabet. */
+:lang(vi) { --font-px: system-ui, sans-serif; }

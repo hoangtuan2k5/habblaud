@@ -215,7 +215,8 @@ describe('listas do protocolo', () => {
     expect(TRAIT_CLASHES.map((p) => p.join('×'))).toEqual(['timidez×piadas', 'timidez×fofoca', 'apostas×economia', 'esporte×sonecas', 'calma×competicao']);
     for (const [a, b] of TRAIT_CLASHES) expect(TRAIT_IDS.includes(a) && TRAIT_IDS.includes(b)).toBe(true);
     expect(LOCALES).toBe(WORLD_LOCALES);
-    expect([...WORLD_LOCALES]).toEqual(UI_LOCALES.map((l) => l.id));
+    expect(UI_LOCALES.map((l) => l.id)).toEqual([...WORLD_LOCALES, 'vi']);
+    expect(WORLD_LOCALES).not.toContain('vi');
     expect(GOODBYE_REASONS).toEqual(expect.arrayContaining(['waiting', 'unauthorized', 'banned', 'suspended', 'update', 'no_player']));
     expect(PLAYER_NAME_LIMITS).toEqual({ min: 3, max: 20 });
   });

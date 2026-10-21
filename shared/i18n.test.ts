@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getLocale, intlLocale, normalizeLocale, serverLocale, setLocale, tr } from './i18n';
+import { getLocale, intlLocale, normalizeLocale, worldLocale, serverLocale, setLocale, tr } from './i18n';
 import { EN } from './locales/en';
 import { ES } from './locales/es';
 import { FR } from './locales/fr';
+import { VI } from './locales/vi';
 
 const placeholders = (s: string) => new Set(s.match(/\{\w+\}/g) ?? []);
 
@@ -62,8 +63,22 @@ describe('i18n', () => {
     expect(intlLocale()).toBe('es');
   });
 
+  it('supports Vietnamese preferences, formatting, placeholders and a supported World locale', () => {
+    expect(normalizeLocale('vi-VN')).toBe('vi');
+    expect(normalizeLocale('vi_VN.UTF-8')).toBe('vi');
+    expect(serverLocale({ HABBLAUD_LANG: 'vi' })).toBe('vi');
+    expect(serverLocale({ LANG: 'vi_VN.UTF-8' })).toBe('vi');
+    setLocale('vi');
+    expect(intlLocale()).toBe('vi-VN');
+    expect(tr('Configurações')).toBe('Cài đặt');
+    expect(tr('Lendo {0}', ['app.ts'])).toBe('Đang đọc app.ts');
+    expect(worldLocale()).toBe('en');
+    setLocale('fr');
+    expect(worldLocale()).toBe('fr');
+  });
+
   it('nenhuma tradução fica vazia nem perde ou inventa lacunas', () => {
-    for (const [lang, dict] of Object.entries({ en: EN, es: ES, fr: FR })) {
+    for (const [lang, dict] of Object.entries({ en: EN, es: ES, fr: FR, vi: VI })) {
       for (const [pt, t] of Object.entries(dict)) {
         expect(t.trim(), `${lang}: ${pt}`).not.toBe('');
         const original = placeholders(pt);

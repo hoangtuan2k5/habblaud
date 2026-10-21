@@ -1316,3 +1316,20 @@ uploads. Set `HABBLAUD_WORLD=0` to turn off World entirely.
 Hooks run on the same host as Habblaud and send only to `127.0.0.1`. In Docker, run the installer on
 the host and publish Habblaud's port on loopback. The hook reports activity only while Habblaud is up;
 it never delays the agent more than its short timeout or changes tool approval decisions.
+
+## Vietnamese interface
+
+Choose **Settings → Language → Tiếng Việt** (or **Configurações → Idioma → Tiếng Việt** in Portuguese).
+Habblaud also detects Vietnamese from the browser language and remembers your explicit choice.
+To translate server-generated activity, notices and logs as well, start with:
+
+```sh
+HABBLAUD_LANG=vi npm run dev
+# Production after npm run build:
+HABBLAUD_LANG=vi npm start
+```
+
+For Docker, set `HABBLAUD_LANG=vi` in `.env` and recreate the container with `npm run docker:up`.
+The interface, activity labels, demo text and installer messages are translated. Agent-written content and
+raw tool output stay in their original language. World does not accept Vietnamese as an account/protocol
+language yet, so World requests use English while its local interface stays Vietnamese.
