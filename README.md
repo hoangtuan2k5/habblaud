@@ -1286,3 +1286,33 @@ forgotten three days after the agent leaves.
 <p align="center">
   Made with ☕ and lots of <a href="https://code.claude.com">Claude Code</a> agents.
 </p>
+
+## Antigravity (local office)
+
+Antigravity App, IDE and CLI can report live session and tool activity through their official hooks.
+With Node.js 22.12+ and Habblaud running locally:
+
+```sh
+npm run antigravity:install
+npm run antigravity:status
+# To remove only Habblaud's hooks:
+npm run antigravity:uninstall
+```
+
+The installer merges its own group into `~/.gemini/config/hooks.json`, preserving other hooks and
+backing up existing content before changes. For workspace-only installation use
+`npm run antigravity:install -- --file /path/to/project/.agents/hooks.json`.
+Use `--port 4848` if Habblaud listens on another port. Review/enable the hooks in Antigravity's
+Customizations > Hooks (CLI: `/hooks`), then start a turn. Keep this checkout in place while the hooks
+are installed. See [Antigravity's hook documentation](https://antigravity.google/docs/hooks).
+
+This integration observes events only: no message sending, permission decisions, transcript history,
+subagent relationships or token/quota readings. Sessions appear with their next hook event after a
+server restart and expire after 24 hours without events, since Antigravity has no session-close hook.
+Each conversation uses its first workspace as its room. App/IDE/CLI sessions share a local Antigravity
+account label; no Google account credentials are read. Antigravity agents are excluded from World
+uploads. Set `HABBLAUD_WORLD=0` to turn off World entirely.
+
+Hooks run on the same host as Habblaud and send only to `127.0.0.1`. In Docker, run the installer on
+the host and publish Habblaud's port on loopback. The hook reports activity only while Habblaud is up;
+it never delays the agent more than its short timeout or changes tool approval decisions.

@@ -88,3 +88,10 @@ describe('ferramenta (Claude Code ou Codex)', () => {
     expect(codexApprovalLabel(undefined)).toBe('—');
   });
 });
+
+it('identifies Antigravity as its own local provider', () => {
+  expect(providerOf({ provider: 'antigravity' })).toBe('antigravity');
+  expect(showsProviderTag('antigravity', 'Local')).toBe(true);
+  expect(showsProviderTag('antigravity', 'Antigravity')).toBe(false);
+  expect(accountChipLabel(undefined, 'local', 'antigravity')).toContain('Antigravity');
+});

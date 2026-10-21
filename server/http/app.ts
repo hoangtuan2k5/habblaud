@@ -6,6 +6,7 @@ import type { AccountsService } from '../accounts/service';
 import { handleCodexEvent } from '../codex/http';
 import type { DayStatsService } from '../history/daystats';
 import type { Office } from '../model/office';
+import { validEvent, type AntigravitySource } from '../sources/antigravity/source';
 import type { CodexLive } from '../sources/codex/live';
 import type { SessionLookup } from '../sources/source';
 import { isJsonContentType, isLoopbackHost } from './guard';
@@ -63,6 +64,7 @@ export interface ApiDeps {
    * não dependem da trava do terminal).
    */
   codexLive?: CodexLive;
+  antigravity?: AntigravitySource;
   /** Novo agente pelo escritório (/api/spawn e, para o auxiliar do host, /api/host/spawn/*; server/spawn/spawn.ts). */
   spawn?: SpawnService;
   /** Pastas sugeridas no "Novo agente" (GET /api/spawn/folders; spawn/folders.ts): projetos recentes. */
@@ -125,6 +127,7 @@ function isLocalOnlyPath(path: string): boolean {
     path === '/api/mod/inbox' ||
     path === '/api/mod/inbox/ack' ||
     path.startsWith('/api/codex/') ||
+    path.startsWith('/api/antigravity/') ||
     path.startsWith('/api/host/')
   );
 }
@@ -476,6 +479,18 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           return true;
         }
         handleCharacter(req, res, id, method).catch((err) => fail(res, err));
+      }
+      return true;
+    }
+    if (path === '/api/antigravity/events') {
+      if (method !== 'POST') methodNotAllowed(res, 'POST');
+      else if (!trusted(req) || (!deps.inDocker && !isLoopbackAddress(req.socket.remoteAddress))) {
+        sendJson(res, 403, { error: tr('eventos do Antigravity só são aceitos pelo próprio computador') });
+      } else {
+        readJson(req).then((body) => {
+          if (!validEvent(body)) throw new HttpError(400, tr('evento do Antigravity inválido'));
+          sendJson(res, 200, { ok: deps.antigravity?.apply(body) ?? false });
+        }).catch((err) => fail(res, err));
       }
       return true;
     }

@@ -404,3 +404,13 @@ describe('projeção: limites', () => {
     expect(r.bytes).toBeLessThan(2600);
   });
 });
+
+it('keeps Antigravity local without sending it as Claude to World', () => {
+  const r = room('/local');
+  const local = agent('ag', r.id, { provider: 'antigravity' });
+  const claude = agent('claude', r.id);
+  const ids = new FakeIds();
+  expect(agentsOf(project(input([r], [local]), ids, NOW))).toHaveLength(0);
+  expect(agentsOf(project(input([r], [local, claude]), ids, NOW))).toHaveLength(1);
+  expect(ids.calls).not.toContain('ag');
+});

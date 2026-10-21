@@ -44,7 +44,10 @@
     "codex:bridge": "tsx scripts/codex-bridge.ts",
     "remote:setup": "tsx scripts/remote-setup.ts",
     "remote:mdns": "tsx scripts/remote-mdns.ts",
-    "release": "tsx scripts/release.ts"
+    "release": "tsx scripts/release.ts",
+    "antigravity:install": "tsx scripts/antigravity-install.ts install",
+    "antigravity:uninstall": "tsx scripts/antigravity-install.ts uninstall",
+    "antigravity:status": "tsx scripts/antigravity-install.ts status"
   },
   "devDependencies": {
     "@fontsource/pixelify-sans": "^5.3.0",

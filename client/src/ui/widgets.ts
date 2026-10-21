@@ -4,7 +4,7 @@ import type { AccountInfo, Activity, AgentInfo, AgentStatus, Provider } from '..
 import { h, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
 import { WORDMARK } from './icons';
 import { shellDoneKind, shellLine, shellStage, statusLabel, type ShellWait } from './model';
-import { accountChipLabel, accountProvider, fallbackShort, showsProviderTag } from './provider';
+import { accountChipLabel, accountProvider, fallbackShort, showsProviderTag, PROVIDER_NAME } from './provider';
 import { tr } from '../../../shared/i18n';
 
 /**
@@ -33,6 +33,8 @@ export function createProviderTag(extra = ''): HTMLElement {
 
 /** Mostra o selo só para o Codex (e não repete quando o nome da conta já diz "Codex"). */
 export function updateProviderTag(tag: HTMLElement, provider: Provider, accountName = ''): void {
+  setText(tag, PROVIDER_NAME[provider]);
+  setTitle(tag, PROVIDER_NAME[provider]);
   setHidden(tag, !showsProviderTag(provider, accountName));
 }
 

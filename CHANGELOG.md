@@ -10,6 +10,15 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Antigravity no escritório local:** hooks de início, chamadas de modelo, ferramentas e fim de turno
+  alimentam agentes e salas reais, sem alterar permissões. Instalação, remoção e verificação por
+  `npm run antigravity:install|uninstall|status`; preserva outros hooks e faz backup antes de alterar.
+  Sem eventos por 24 horas, a sessão sai do escritório; reinicie um turno após reiniciar o Habblaud.
+  Mensagens, aprovações, histórico de conversa, subagentes e uso de tokens ainda não são integrados.
+  Agentes do Antigravity ficam fora do Habblaud World, cujo protocolo ainda não aceita essa ferramenta.
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido

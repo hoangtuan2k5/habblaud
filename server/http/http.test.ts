@@ -438,3 +438,16 @@ describe('guarda de Host/Origin', () => {
     expect(originAllowed('file://', 'localhost:4747', allowed)).toBe(false);
   });
 });
+
+
+it('accepts Antigravity events locally and rejects invalid bodies and non-local hosts', async () => {
+  const env = await start();
+  try {
+    const body = { event: 'PreInvocation', conversationId: 'local-test', workspacePaths: ['/project'] };
+    const url = `${env.base}/api/antigravity/events`;
+    expect((await fetch(url, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })).status).toBe(200);
+    expect((await fetch(url, { method: 'POST', headers: JSON_HEADERS, body: '{}' })).status).toBe(400);
+    expect((await fetch(url, { method: 'GET' })).status).toBe(405);
+    expect((await raw(env.base, '/api/antigravity/events', { method: 'POST', headers: { ...JSON_HEADERS, Host: 'habblaud.lan' }, body: JSON.stringify(body) })).status).toBe(403);
+  } finally { await env.close(); env.cleanup(); }
+});
