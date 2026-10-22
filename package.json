@@ -21,6 +21,7 @@
     "shots:world": "node scripts/world-shots.mjs",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build --config vite.config.ts",
+    "build:windows": "node scripts/build-windows.mjs",
     "build:server": "node scripts/build-server.mjs",
     "start": "node dist/server/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p server/tsconfig.json",

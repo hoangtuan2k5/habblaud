@@ -10,12 +10,13 @@ import { SoundSettingsGroup } from './settings-sound';
 import type { SoundControl } from './sound';
 import { AboutGroup } from './version';
 import type { WorldThemeLink } from './world/world-dialog';
-import { LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
+import { VI_ONLY, LOCALE_STORAGE_KEY, LOCALES, normalizeLocale, tr, type Locale } from '../../../shared/i18n';
 
 type LanguageChoice = 'auto' | Locale;
 
 /** Idioma escolhido nas Configurações ("auto" = o do navegador). */
 function savedLanguage(): LanguageChoice {
+  if (VI_ONLY) return 'vi';
   try {
     return normalizeLocale(localStorage.getItem(LOCALE_STORAGE_KEY)) ?? 'auto';
   } catch {
@@ -156,7 +157,7 @@ export class SettingsPopover implements UiComponent {
     // Nomes dos idiomas sempre na própria língua, para quem não entende o idioma atual achar o seu.
     this.language = segmented<LanguageChoice>(
       tr('Idioma da interface'),
-      [['auto', tr('Automático')], ...LOCALES.map((l): [LanguageChoice, string] => [l.id, l.name])],
+      VI_ONLY ? [['vi', 'Tiếng Việt']] : [['auto', tr('Automático')], ...LOCALES.map((l): [LanguageChoice, string] => [l.id, l.name])],
       (v) => pickLanguage(v),
     );
     this.language.row.append(

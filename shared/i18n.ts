@@ -9,6 +9,11 @@
 // Os textos de atividade são montados pelo servidor, então seguem o idioma do servidor.
 import { DICTIONARIES } from './locales/all';
 
+declare const __HABBLAUD_VI_ONLY__: boolean;
+
+/** The Windows customer build fixes the interface language independently of browser preferences. */
+export const VI_ONLY = typeof __HABBLAUD_VI_ONLY__ !== 'undefined' && __HABBLAUD_VI_ONLY__;
+
 export type Locale = 'pt-BR' | 'en' | 'es' | 'fr' | 'vi';
 
 /** Na ordem do seletor; o nome de cada idioma vai na própria língua, para quem não entende o idioma atual. */
@@ -67,6 +72,7 @@ function detect(): Locale {
     process?: { env?: Record<string, string | undefined> };
   };
   if (g.window !== undefined) {
+    if (VI_ONLY) return 'vi';
     try {
       const saved = normalizeLocale(g.localStorage?.getItem(LOCALE_STORAGE_KEY));
       if (saved) return saved;

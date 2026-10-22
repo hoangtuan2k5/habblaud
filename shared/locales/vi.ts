@@ -1,5 +1,8 @@
 // Tiếng Việt. Khóa là văn bản gốc tiếng Bồ Đào Nha; giữ nguyên các biến thay thế.
 export const VI: Readonly<Record<string, string>> = {
+  "Antigravity: hooks configurados; execução ainda não verificada.": "Antigravity: đã có cấu hình hook; chưa xác minh App thực sự gọi hook.",
+  "Antigravity: hooks não configurados.": "Antigravity: chưa có cấu hình hook.",
+
   "Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo.": "Văn phòng ảo pixel art hiển thị hoạt động của các agent Claude Code theo thời gian thực.",
   "Este pedido já foi respondido.": "Yêu cầu này đã được trả lời.",
   "Não foi possível responder (erro {0}).": "Không thể trả lời (lỗi {0}).",
@@ -2986,6 +2989,5 @@ export const VI: Readonly<Record<string, string>> = {
   "Abra o Claude Code, o Codex ou o Antigravity em qualquer projeto e veja seu agente chegar.": "Mở Claude Code, Codex hoặc Antigravity trong dự án bất kỳ và xem agent xuất hiện.",
   "eventos do Antigravity só são aceitos pelo próprio computador": "chỉ nhận sự kiện Antigravity từ chính máy này",
   "evento do Antigravity inválido": "sự kiện Antigravity không hợp lệ",
-  "Antigravity: {0}": "Antigravity: {0}",
   "Hooks do Antigravity atualizados: {0}": "Đã cập nhật hook Antigravity: {0}",
 };

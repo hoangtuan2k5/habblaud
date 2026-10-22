@@ -2,6 +2,8 @@
 // As lacunas {0}, {1}... (e as nomeadas, como {sala}) precisam aparecer na tradução, em qualquer ordem.
 // Chave ausente = o texto fica em PT. `npm run i18n:check` lista os textos sem tradução e as chaves que sobraram.
 export const FR: Readonly<Record<string, string>> = {
+  "Antigravity: hooks configurados; execução ainda não verificada.": "Antigravity : hooks configurés ; leur exécution reste à vérifier.",
+  "Antigravity: hooks não configurados.": "Antigravity : hooks non configurés.",
   // client/src/main.ts
   "Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo.": "Bureau virtuel en pixel art qui montre, en temps réel, ce que font vos agents Claude Code.",
 
@@ -3294,6 +3296,5 @@ export const FR: Readonly<Record<string, string>> = {
   "Abra o Claude Code, o Codex ou o Antigravity em qualquer projeto e veja seu agente chegar.": "Ouvrez Claude Code, Codex ou Antigravity dans un projet et regardez votre agent arriver.",
   "eventos do Antigravity só são aceitos pelo próprio computador": "les événements Antigravity ne sont acceptés que depuis cet ordinateur",
   "evento do Antigravity inválido": "événement Antigravity invalide",
-  "Antigravity: {0}": "Antigravity : {0}",
   "Hooks do Antigravity atualizados: {0}": "Hooks Antigravity mis à jour : {0}",
 };
