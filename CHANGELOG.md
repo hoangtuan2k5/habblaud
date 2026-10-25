@@ -10,6 +10,11 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Corrigido
+
+- As notas das releases deste fork passam a usar `CHANGELOG.vi.md` em vietnamita, com verificação obrigatória
+  da seção da versão antes de publicar, em vez do changelog original em português.
+
 ## [1.1.0-rc.2] - 2026-10-25
 
 ### Adicionado

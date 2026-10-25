@@ -47,8 +47,8 @@ jobs:
           const git = args => execFileSync('git', args, { encoding: 'utf8' }).trim();
           if (git(['rev-parse', `refs/tags/${tag}^{commit}`]) !== git(['rev-parse', 'HEAD'])) throw Error('Checkout must match the existing tag');
           git(['merge-base', '--is-ancestor', 'HEAD', 'origin/main']);
-          const notes = changelogSection(readFileSync('CHANGELOG.md', 'utf8'), version);
-          if (!notes) throw Error('Version changelog missing');
+          const notes = changelogSection(readFileSync('CHANGELOG.vi.md', 'utf8'), version);
+          if (!notes) throw Error('Vietnamese release notes missing for this version');
           mkdirSync('dist/release-notes', { recursive: true });
           writeFileSync('dist/release-notes/notes.md', unwrapMarkdown(notes) + '\n');
           NODE

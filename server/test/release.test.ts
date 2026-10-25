@@ -66,5 +66,7 @@ describe('CHANGELOG.md', () => {
     const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string };
     const notes = changelogSection(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
     expect(notes, `escreva a seção "## [${version}]" no CHANGELOG.md`).toBeTruthy();
+    const vietnamese = changelogSection(readFileSync(join(ROOT, 'CHANGELOG.vi.md'), 'utf8'), version);
+    expect(vietnamese, `write Vietnamese release notes for ${version}`).toBeTruthy();
   });
 });

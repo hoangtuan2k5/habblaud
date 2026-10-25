@@ -1064,6 +1064,8 @@ working, note the changes under "Não lançado" (Unreleased). To release:
 1. Bump the number with `npm version minor --no-git-tag-version` (or `patch`, for a bug-fix-only version).
 2. Replace "Não lançado" with the version and the date (`## [0.3.0] - AAAA-MM-DD`), leave an empty "Não lançado" above it and
    update the links at the end. `npm test` fails if the `package.json` version doesn't have a section.
+   Add the same version to `CHANGELOG.vi.md` with Vietnamese release notes. The release script and workflow
+   require this file and use it for GitHub Release; they do not fall back to the upstream Portuguese changelog.
 3. Merge into `main` and run `npm run release` (`-- --dry-run` only checks and shows the notes).
    The script pushes the version tag. The [Release workflow](.github/workflows/release.yml) runs Linux tests,
    Windows integration tests, builds and checks the Vietnamese EXE, then publishes the release with its EXE,

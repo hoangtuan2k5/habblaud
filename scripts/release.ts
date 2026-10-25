@@ -1,4 +1,4 @@
-// Confere a seção da versão no CHANGELOG.md e envia a tag vX.Y.Z; o workflow Release testa, compila o EXE e publica.
+// Confere as notas vietnamitas no CHANGELOG.vi.md e envia a tag; o workflow testa, compila o EXE e publica.
 //   npm run release                -> envia a tag e inicia o workflow
 //   npm run release -- --dry-run   -> só confere e mostra as notas
 // Antes: suba a versão no package.json (npm version minor --no-git-tag-version), escreva a seção no CHANGELOG.md e
@@ -91,8 +91,8 @@ function main(argv: string[]): void {
 
   const version = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
   const tag = `v${version}`;
-  const section = changelogSection(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
-  if (!section) fail(`o CHANGELOG.md não tem a seção "## [${version}]" (ou ela está vazia): escreva o que entrou nesta versão.`);
+  const section = changelogSection(readFileSync(join(ROOT, 'CHANGELOG.vi.md'), 'utf8'), version);
+  if (!section) fail(`o CHANGELOG.vi.md não tem a seção "## [${version}]" (ou ela está vazia): escreva as notas em vietnamita.`);
 
   const branch = run('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
   if (branch !== 'main') fail(`publique a partir da main (você está em ${branch}).`);
