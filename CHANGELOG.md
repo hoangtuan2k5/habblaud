@@ -10,6 +10,78 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+## [1.1.0-rc.2] - 2026-10-25
+
+### Adicionado
+
+- **Release automática:** tags de versão passam por testes Linux/Windows, compilação e conferência do pacote;
+  a publicação inclui EXE vietnamita, SHA-256, instruções e metadados. Tags de pré-lançamento ficam como prerelease.
+
+- **Permissões e perguntas do Antigravity no escritório:** pedidos locais de comandos e permissões unificadas podem
+  ser aprovados uma vez ou recusados; perguntas exibem as opções originais no cartão existente. A ponte confere novamente o pedido antes da decisão,
+  sem mudar regras ou aprovar automaticamente. Outras formas de interação continuam no Desktop.
+
+- **Antigravity experimental no Windows:** conversa local pelo transcript validado, envio direto à mesma sessão
+  do Desktop (inclusive ociosa) e interrupção do turno pelo próprio Habblaud, sem abrir outra página. A ponte
+  usa o serviço local autenticado do Desktop; credenciais não vão ao navegador. Hooks apenas observam e as
+  configurações de modelo e permissões da sessão permanecem inalteradas.
+
+- **Instalador Windows x64:** pacote por usuário com Node incluído, atalhos para abrir/parar o escritório,
+  abertura do navegador após o servidor responder e opção de iniciar ao entrar no Windows. Hooks do
+  Antigravity são opcionais, preservam configurações existentes e usam caminhos compatíveis com Windows.
+  O pacote usa somente arquivos da aplicação; não inclui credenciais, sessões nem configuração Cloudflare
+  da máquina de compilação. `npm run build:windows` gera o instalador e seu SHA-256 usando NSIS.
+
+- **Interface em vietnamita:** opção “Tiếng Việt”, detecção de `vi`/`vi-VN`, datas e números em `vi-VN`,
+  dicionário completo dos textos atuais (interface, atividades, demonstração, scripts e mensagens do servidor).
+  `HABBLAUD_LANG=vi` traduz também as atividades vindas do servidor. Fontes da interface e caracteres do canvas
+  passam a aceitar as letras e os acentos vietnamitas, inclusive Unicode decomposto. O World continua com seu
+  protocolo atual: a interface local é vietnamita, mas o idioma enviado ao World é inglês.
+
+- **Antigravity no escritório local:** hooks de início, chamadas de modelo, ferramentas e fim de turno
+  alimentam agentes e salas reais, sem alterar permissões. Instalação, remoção e verificação por
+  `npm run antigravity:install|uninstall|status`; preserva outros hooks e faz backup antes de alterar.
+  Sem eventos por 24 horas, a sessão sai do escritório. No Windows, a ponte local recupera sessões recentes
+  do Desktop e permite conversa e respostas aos pedidos suportados; subagentes e uso de tokens não são integrados.
+  Agentes do Antigravity ficam fora do Habblaud World, cujo protocolo ainda não aceita essa ferramenta.
+
+### Corrigido
+
+- Alinha as versões do marketplace e dos plugins com o pacote, corrigindo a falha da verificação de release.
+
+- **Conversa do Antigravity:** mostra apenas o pedido do usuário, sem o envelope `USER_REQUEST` e os blocos
+  `ADDITIONAL_METADATA` acrescentados pelo Desktop. Mantém formatação e tags escritas dentro do pedido.
+
+- **Compilação nativa no Windows:** corrige o separador do curinga de arquivos do NSIS e lê o script
+  do instalador explicitamente como UTF-8, preservando o vietnamita. A verificação de traduções normaliza
+  CRLF como o JavaScript; testes de disco/shell recebem tempo para executar no Windows.
+
+- **Revisão da instalação Windows:** launcher vietnamita em UTF-8 com BOM para Windows PowerShell 5.1;
+  atualização/desinstalação interrompidas quando não conseguem parar o servidor pertencente à instalação.
+  A desinstalação mantém os arquivos se falhar ao remover sua configuração de hooks.
+  Tratamento explícito de falha ao iniciar o instalador de hooks e documentação das dependências do Windows.
+
+- **Invocação do hook Antigravity no Windows:** remove o segundo `cmd.exe /d /s /c` e suas aspas
+  aninhadas, que falharam nos logs entregues pelo usuário em `prompt-gemini-fix-habblaud.zip`. Gera comandos
+  diretos com caminhos locais: sem aspas quando seguros, com aspas para espaços/metacaracteres e rejeição de
+  expansão de variáveis. Mantém timeout de 10 segundos e os eventos `PreInvocation`, `PostInvocation`, `Stop`.
+  Preserva outros hooks e não altera decisões de aprovação. O status agora distingue configuração de execução;
+  diagnóstico distingue HTTP recusado de evento aceito (`accepted`). Job Windows testa a invocação pelo shell;
+  teste com servidor simulado não é apresentado como validação de uma sessão real do Desktop.
+
+- **Diagnóstico opcional do hook Antigravity:** com o marcador `~/.habblaud/antigravity-hook-debug`, grava
+  apenas o último disparo, etapa, código HTTP e quantidade de workspaces; não registra mensagens, caminhos
+  nem argumentos de ferramentas. Ajuda a distinguir hook não executado de evento recusado pelo servidor.
+
+- **Idioma do instalador Windows:** edição para clientes fixa a interface em vietnamita mesmo com navegador
+  em inglês ou preferência antiga salva; o seletor oferece somente vietnamita. O assistente de instalação
+  e os atalhos usam vietnamita. A compilação comum mantém todos os idiomas disponíveis.
+
+- **Hook de observação do Antigravity:** `PreToolUse` responde com `decision: "allow"`, conforme o contrato
+  oficial, para delegar à próxima regra ou à política padrão; nunca usa `auto_approve`. Sem Habblaud ou com
+  entrada inválida, o hook continua sem interromper o agente. Teste executa o processo real nos dois casos.
+
+
 ## [1.1.0-rc.1] - 2026-10-25
 
 ### Adicionado
@@ -645,7 +717,8 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/hoangtuan2k5/habblaud/compare/v1.1.0-rc.1...HEAD
+[Não lançado]: https://github.com/hoangtuan2k5/habblaud/compare/v1.1.0-rc.2...HEAD
+[1.1.0-rc.2]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.2
 [1.1.0-rc.1]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.1
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/marmottajr/habblaud/compare/v1.0.1...v1.0.2
