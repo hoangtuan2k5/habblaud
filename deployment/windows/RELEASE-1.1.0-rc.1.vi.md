@@ -71,3 +71,34 @@ Repo GitHub đã kiểm tra bằng API: `hoangtuan2k5/habblaud`, main, Actions b
 Chưa commit, push, tạo tag hoặc release theo yêu cầu chờ duyệt ban đầu.
 
 Conventional Commit đề xuất: `feat(windows): ship Antigravity controls and automated releases`.
+
+## Cập nhật sau phê duyệt: rc.2 đã phát hành
+
+Người dùng đã duyệt commit/push/tag. Commit tính năng `eda8b84` và tag rc.1 được giữ nguyên.
+CI phát hiện một lỗi đồng bộ version: package đã là rc.1 nhưng marketplace/plugin manifest còn 1.0.3.
+Commit `d7a6e4b` đồng bộ manifest, tăng rc.2; không sửa test để bỏ qua lỗi, không di chuyển tag cũ.
+
+- Release: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.2
+- Workflow Release: https://github.com/hoangtuan2k5/habblaud/actions/runs/40184899695 — tất cả job đạt.
+- CI: https://github.com/hoangtuan2k5/habblaud/actions/runs/40184896817 — Linux và Windows đạt.
+- Linux: 1911 test đạt, 3 bỏ qua; Windows nhóm tích hợp: 185 đạt, 4 bỏ qua (Codex shebang).
+  Test shell Windows với khoảng trắng/Unicode thực sự chạy. Build và check payload đạt.
+- Release công khai dạng prerelease, đủ EXE, `.sha256`, `README.vi.txt`, `build.json`.
+
+EXE cuối: `Habblaud-Setup-1.1.0-rc.2-win-x64-vi-direct-hooks.exe`, 25.544.533 byte.
+
+SHA-256: `c637bc2a1671848a12d532b381e597a2a624040ecebe9d93a251d189032c8550`.
+
+Đã tải chính asset GitHub về và xác minh checksum; build.json ghi
+`d7a6e4b34b4396a022e956ff6f5d462d4a30b847`, dirty=false.
+17:31:02 đã cài EXE này, exit 0; build metadata sau cài khớp release, 7 file dữ liệu giữ nguyên hash,
+hook khác không đổi. 17:31:24 UI tiếng Việt trong trình duyệt en-US, chat idle bật, hội thoại đọc được;
+health báo version 1.1.0-rc.2 và permissions=true.
+
+Bản tải xuống nằm tại `C:\Users\hoang\Downloads\`, bằng chứng tại `dist/release-1.1.0-rc.2/`:
+`verification.json`, `install-verification.json`, `ui-native-result.json`, `actions.log`.
+Backup hook mới nhất: `dist/release-1.1.0-rc.2/hooks.before.json`; backup ứng dụng trước thay đổi quyền
+vẫn ở đường dẫn ghi phía trên. Bản ghi rc.1 trong báo cáo này là lịch sử kiểm tra trước phát hành.
+
+Giới hạn còn lại: duyệt lệnh/quyền chuẩn và hủy lượt đang chạy chưa thử với Desktop thật;
+không suy từ câu hỏi đã thành công sang các nhánh này. Bộ cài chưa ký số; bản phát hành vẫn là thử nghiệm.
