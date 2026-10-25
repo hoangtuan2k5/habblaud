@@ -10,7 +10,12 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+## [1.1.0-rc.3] - 2026-10-25
+
 ### Corrigido
+
+- Antigravity procura sessões do Desktop a cada 15 segundos, inclusive quando o Desktop abre depois do
+  Habblaud, e encontra o transcript criado após o primeiro hook para abrir a conversa sem reiniciar.
 
 - As notas das releases deste fork passam a usar `CHANGELOG.vi.md` em vietnamita, com verificação obrigatória
   da seção da versão antes de publicar, em vez do changelog original em português.
@@ -722,7 +727,8 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/hoangtuan2k5/habblaud/compare/v1.1.0-rc.2...HEAD
+[Não lançado]: https://github.com/hoangtuan2k5/habblaud/compare/v1.1.0-rc.3...HEAD
+[1.1.0-rc.3]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.3
 [1.1.0-rc.2]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.2
 [1.1.0-rc.1]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.1
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3

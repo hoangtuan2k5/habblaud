@@ -4,6 +4,20 @@ Ghi chú tiếng Việt dùng để xuất bản GitHub Release. Mỗi phiên b�
 
 ## [Chưa phát hành]
 
+## [1.1.0-rc.3] - 2026-10-25
+
+### Lỗi đã sửa
+
+- Tự quét phiên Antigravity Desktop mỗi 15 giây, kể cả khi Desktop mở sau Habblaud.
+- Tìm lại file hội thoại được tạo sau hook đầu tiên, sửa lỗi mở terminal báo không tìm thấy transcript.
+
+### Kiểm tra thực tế
+
+- Đã tái hiện lỗi HTTP 404 do không tìm thấy transcript; sau sửa, cả 3 phiên AGY trên máy đều mở hội thoại với HTTP 200.
+- Giao diện đã hiển thị phản hồi thật bằng tiếng Việt. Không tạo sự kiện hoặc hội thoại giả để kiểm tra.
+- Không thay đổi chính sách quyền AGY. Giữ các tính năng của [rc.2](https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.2).
+- Chỉ quét các phiên cục bộ gần đây có transcript trong 24 giờ, tối đa 16 phiên; không phải toàn bộ lịch sử AGY.
+
 ## [1.1.0-rc.2] - 2026-10-25
 
 ### Tính năng mới

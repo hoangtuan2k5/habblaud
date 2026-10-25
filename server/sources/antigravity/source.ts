@@ -12,6 +12,7 @@ import type { AntigravityDesktop, DesktopSession } from './desktop';
 
 export const ANTIGRAVITY_EVENTS = ['SessionStart', 'PreInvocation', 'PostInvocation', 'PreToolUse', 'PostToolUse', 'Stop'] as const;
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+export const DESKTOP_SCAN_MS = 15_000;
 type Rec = Record<string, unknown>;
 const record = (v: unknown): v is Rec => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -44,21 +45,31 @@ export class AntigravitySource implements AgentSource {
   private seq = 0;
   private account?: string;
   private transcripts = new Map<string, string>();
+  private scanning = false;
+  private stopped = true;
 
   constructor(private readonly office: Office, private readonly accounts: AccountsService, private readonly now = Date.now, private readonly desktop?: Pick<AntigravityDesktop, 'list'>) {}
 
   start(): void {
-    this.timer = setInterval(() => this.expire(), 60_000);
+    if (this.timer) return;
+    this.stopped = false;
+    this.timer = setInterval(() => { this.expire(); void this.scanDesktop(); }, DESKTOP_SCAN_MS);
     this.timer.unref?.();
     if (this.desktop) {
       this.office.beginBoot();
-      void this.desktop.list().then(sessions => { for (const session of sessions) this.restore(session); })
-        .finally(() => this.office.endBoot()).catch(() => {});
+      void this.scanDesktop().finally(() => this.office.endBoot());
     }
   }
 
-  stop(): void { clearInterval(this.timer); }
-  transcriptPathOf(agentId: string): string | undefined { return this.transcripts.get(agentId); }
+  stop(): void { this.stopped = true; clearInterval(this.timer); this.timer = undefined; }
+  transcriptPathOf(agentId: string): string | undefined {
+    const cached = this.transcripts.get(agentId);
+    if (cached || !this.sessions.has(agentId)) return cached;
+    const conversationId = agentId.slice('antigravity:'.length);
+    const path = verifiedTranscript(join(homedir(), '.gemini/antigravity/brain', conversationId, '.system_generated/logs/transcript.jsonl'), conversationId);
+    if (path) this.transcripts.set(agentId, path);
+    return path;
+  }
   terminalParser() { return createAntigravityTerminalParser(); }
   sources(): SourceInfo[] {
     return this.account ? [{ label: 'Antigravity', provider: this.provider, path: 'hooks', sessions: this.sessions.size, ok: true }] : [];
@@ -72,6 +83,16 @@ export class AntigravitySource implements AgentSource {
     }
   }
 
+  private async scanDesktop(): Promise<void> {
+    if (!this.desktop || this.scanning || this.stopped) return;
+    this.scanning = true;
+    try {
+      const sessions = await this.desktop.list();
+      if (!this.stopped) for (const session of sessions) this.restore(session);
+    } catch { /* Desktop can be closed; keep hook sessions until their normal expiry. */ }
+    finally { this.scanning = false; }
+  }
+
   private ensureAccount(): string {
     if (!this.account) this.account = this.accounts.setProviderAccounts(this.provider, [{ dir: 'antigravity', detected: {
       id: 'antigravity', configDir: 'hooks', short: 'AG', name: 'Antigravity', color: '#5cc97b',
@@ -83,7 +104,7 @@ export class AntigravitySource implements AgentSource {
     if (!/^[a-zA-Z0-9-]{1,128}$/.test(session.conversationId) || !session.workspacePaths.length
       || !session.workspacePaths.every(path => isAbsolute(path)) || this.now() - session.lastAt >= SESSION_TTL_MS) return;
     const id = `antigravity:${session.conversationId}`;
-    if (this.sessions.has(id)) return; // A live hook is newer than the startup snapshot.
+    if ((this.sessions.get(id) ?? -Infinity) >= session.lastAt) return; // Preserve hooks newer than the Desktop snapshot.
     const transcript = verifiedTranscript(session.transcriptPath, session.conversationId);
     if (transcript) this.transcripts.set(id, transcript);
     this.office.addMain({ id, provider: this.provider, account: this.ensureAccount(), sessionId: session.conversationId,
