@@ -6,9 +6,6 @@ Ghi chú tiếng Việt dùng để xuất bản GitHub Release. Mỗi phiên b�
 
 ## [1.1.0-rc.2] - 2026-10-25
 
-Habblaud dành cho Windows x64, giao diện và bộ cài tiếng Việt. Đây là bản thử nghiệm tích hợp
-Antigravity Desktop, chưa ký số.
-
 ### Tính năng mới
 
 - **Hội thoại AGY ngay trong Habblaud:** đọc hội thoại của phiên thật, gửi tin nhắn vào cùng phiên kể cả
