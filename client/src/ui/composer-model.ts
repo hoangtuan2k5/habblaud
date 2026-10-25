@@ -31,16 +31,18 @@ export function composerMode(agent: AgentInfo | undefined, env: ComposerEnv): Co
   if (env.replaying) return { kind: 'off', text: tr('Sem mensagens no timelapse: o escritório mostrado é o de outro momento') };
   if (agent?.kind === 'sub') return { kind: 'off', text: tr('Subagentes não recebem mensagens: escreva para o agente principal') };
   if (!agent || agent.status === 'offline' || agent.status === 'done') return { kind: 'off', text: tr('Sessão encerrada') };
-  if (agent.provider === 'antigravity') return { kind: 'off', text: tr('Para responder, use o Antigravity') };
+  const agy = agent.provider === 'antigravity';
   const codex = agent.provider === 'codex';
-  if (!env.enabled) return { kind: 'off', text: codex ? tr('Para responder, use o Codex') : tr('Para responder, use o terminal do Claude Code') };
+  if (!env.enabled) return { kind: 'off', text: agy ? tr('Para responder, use o Antigravity') : codex ? tr('Para responder, use o Codex') : tr('Para responder, use o terminal do Claude Code') };
   if (!env.local) return { kind: 'off', text: tr('Para mandar mensagens por aqui, abra o Habblaud por http://localhost (ou 127.0.0.1)') };
+  if (agy && !agent.canMessage) return { kind: 'hint', text: tr('Conecte ao Antigravity Desktop local no Windows para enviar mensagens nesta sessão.') };
   if (!agent.canMessage) return { kind: 'hint', text: codex ? CODEX_BRIDGE_HINT : PLUGIN_HINT };
   return { kind: 'ready' };
 }
 
 /** Dica embaixo da caixa (gaveta): como a mensagem entra na sessão. */
 export function composerTip(provider: Provider = 'claude'): string {
+  if (provider === 'antigravity') return tr('Envia ao Antigravity Desktop nesta conversa, inclusive quando estiver ociosa. Enter manda; Shift+Enter quebra a linha.');
   return provider === 'codex'
     ? tr('Entra na fila da sessão e vira o próximo prompt quando o Codex terminar o que está fazendo. Enter manda; Shift+Enter quebra a linha.')
     : tr('Entra na sessão como se você tivesse digitado. Enter manda; Shift+Enter quebra a linha.');
@@ -98,6 +100,7 @@ export function sendStatusText(s: SendState | undefined, now: number, provider: 
       // Entregue = entrou na sessão ou na fila dela (com o agente ocupado, só entra quando ele terminar o turno). No
       // Codex é sempre a fila: o dono da sessão a consulta a cada ~10 s e só a usa com a sessão ociosa.
       if (now - s.at >= DELIVERED_SHOW_MS) return '';
+      if (provider === 'antigravity') return tr('Entregue ✓ o Antigravity Desktop aceitou a mensagem nesta conversa');
       return codex
         ? tr('Entregue ✓ na fila da sessão: entra quando o Codex terminar o que está fazendo (até ~10 s)')
         : tr('Entregue ✓ (se o agente estiver ocupado, entra quando ele terminar)');
@@ -125,5 +128,6 @@ export const OFFLINE_ERROR = tr('não foi possível falar com o Habblaud');
 
 /** Prazo da consulta acabou sem notícia: onde conferir. */
 export function timeoutError(provider: Provider = 'claude'): string {
+  if (provider === 'antigravity') return tr('sem notícia da entrega: confira no Antigravity');
   return provider === 'codex' ? CODEX_TIMEOUT_ERROR : TIMEOUT_ERROR;
 }

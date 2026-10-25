@@ -62,6 +62,7 @@ export interface PermissionOptions {
 }
 
 export function permissionOptions(p: Pick<PermissionRequestInfo, 'provider' | 'suggestions'>, agent: Pick<AgentInfo, 'kind' | 'background'>): PermissionOptions {
+  if (p.provider === 'antigravity') return { always: false, interrupt: false, reasonRequired: false, seconds: false, note: tr('Aprova somente este pedido no Antigravity Desktop, sem alterar as regras de permissão.') };
   if (p.provider === 'codex') return { always: false, interrupt: false, reasonRequired: true, seconds: true, note: CODEX_PERMISSION_NOTE };
   // Subagente em segundo plano: o Claude Code só mostra o diálogo depois que o hook responde.
   const blocking = agent.kind === 'sub' && !!agent.background;
@@ -337,14 +338,15 @@ export class PermissionCard {
     }
     setText(this.title, ask ? (p.questions!.length > 1 ? tr('Perguntas para você') : tr('Pergunta para você')) : tr('Pede permissão'));
     const by = p.subagent ? tr(' · subagente {0}', [p.subagent]) : '';
-    setText(this.what, ask ? tr('Aqui ou no terminal: vale a primeira resposta{0}', [by]) :`${p.icon} ${p.text}${by}`);
-    setText(this.timer, expiryText(p.expiresAt, now, opts.seconds));
+    setText(this.what, ask ? (p.provider === 'antigravity' ? `Antigravity Desktop${by}` : tr('Aqui ou no terminal: vale a primeira resposta{0}', [by])) :`${p.icon} ${p.text}${by}`);
+    setText(this.timer, p.provider === 'antigravity' ? 'Antigravity Desktop' : expiryText(p.expiresAt, now, opts.seconds));
     setTitle(
       this.timer,
       codex
         ? tr('Pedido feito às {0}. Sem resposta aqui até {1}, o Codex segue sem a decisão do escritório e pede a aprovação no terminal.', [formatClock(p.createdAt), formatClock(p.expiresAt)])
         : tr('Pedido feito às {0}. Sem resposta aqui até {1}, o Habblaud devolve o pedido ao terminal.', [formatClock(p.createdAt), formatClock(p.expiresAt)]),
     );
+    if (p.provider === 'antigravity') setTitle(this.timer, 'Antigravity Desktop');
 
     // Pergunta: o formulário com as opções no lugar do título da ferramenta e da prévia dos argumentos.
     setHidden(this.tool, ask);
@@ -377,6 +379,7 @@ export class PermissionCard {
     setHidden(this.approveBtn, ask);
     setHidden(this.answerBtn, !ask);
     for (const b of [this.approveBtn, this.denyBtn, this.terminalBtn]) b.disabled = busy;
+    setText(this.terminalBtn, p.provider === 'antigravity' ? tr('Responder no Antigravity Desktop') : tr('Responder no terminal'));
     for (const el of this.askForm.querySelectorAll('input')) el.disabled = busy;
     if (ask) this.syncAnswer();
     setTitle(this.denyBtn, ask ? tr('Não responder: o agente segue sem a resposta (com o motivo, se você escrever um)') : codex ? tr('Recusar com um motivo (o Codex pede um)') : '');
@@ -389,6 +392,7 @@ export class PermissionCard {
     setHidden(this.always, ask || !opts.always || this.phase === 'deny');
     setHidden(this.denyForm, this.phase !== 'deny');
     setHidden(this.interruptRow, !opts.interrupt);
+    setHidden(this.reason, p.provider === 'antigravity' && (p.tool === 'run_command' || ask));
     setAttr(
       this.reason,
       'placeholder',

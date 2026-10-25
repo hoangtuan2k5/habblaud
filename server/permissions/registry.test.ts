@@ -3,13 +3,44 @@
 // agente que saiu, resposta no terminal (tool_result no transcript), sugestões "sempre permitir" e as
 // perguntas do AskUserQuestion (respostas por posição). Tudo com dados sintéticos.
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setQuiet } from '../log';
 import { NameStore } from '../model/names';
 import { Office } from '../model/office';
 import { appendLines, L, tempDir, writeLines } from '../test/fixtures';
 import { EXPIRY_GRACE_MS, parseDecision, pickSuggestions, PermissionRegistry, UNWATCHED_MS, type WaitResult } from './registry';
 import { callSignature, scanToolCall } from './transcript';
+import type { DesktopPermission } from '../sources/antigravity/desktop';
+
+it('publishes native Desktop questions, keeps failed decisions pending and removes requests answered in Desktop', async () => {
+  const { office, clock } = setup();
+  office.addMain({ id: 'antigravity:session-1', provider: 'antigravity', account: 'agy', sessionId: 'session-1', cwd: '/fixture', role: 'Agent', startedAt: 0, status: 'working' });
+  const request: DesktopPermission = { id: 'native-request', conversationId: 'session-1', trajectoryId: 'trajectory-1', stepIndex: 7,
+    kind: 'askQuestion', tool: 'AskUserQuestion', input: 'Choose', questions: [{ question: 'Choose', options: [{ id: 'one', text: 'First' }] }] };
+  let requests = [request];
+  let accepted = false;
+  const decidePermission = vi.fn(async () => accepted);
+  const registry = new PermissionRegistry({ office, viewers: () => 1, now: clock.now, antigravity: { pending: async () => requests, decidePermission } });
+  registry.tick();
+  await vi.waitFor(() => expect(registry.snapshot().get('antigravity:session-1')?.questions?.[0]?.options[0].label).toBe('First'));
+  expect(await registry.respond(request.id, { behavior: 'allow' })).toBe('invalid-answer');
+  const decision = { behavior: 'answer' as const, answers: [{ question: 0, options: [0] }] };
+  expect(await registry.respond(request.id, decision)).toBe('conflict');
+  expect(registry.detail(request.id)).toBeDefined();
+  accepted = true;
+  expect(await registry.respond(request.id, decision)).toBe('ok');
+  expect(decidePermission).toHaveBeenLastCalledWith(request, decision);
+  expect(registry.detail(request.id)).toBeUndefined();
+  clock.advance(2500); registry.tick();
+  await vi.waitFor(() => expect(registry.snapshot().size).toBe(0));
+  requests = []; clock.advance(2500); registry.tick();
+  await new Promise(done => setTimeout(done, 0));
+  requests = [request]; clock.advance(2500); registry.tick();
+  await vi.waitFor(() => expect(registry.detail(request.id)).toBeDefined());
+  requests = []; clock.advance(2500); registry.tick();
+  await vi.waitFor(() => expect(registry.detail(request.id)).toBeUndefined());
+  registry.stop();
+});
 
 setQuiet(true);
 

@@ -4,6 +4,7 @@
 //   npm start      -> node dist/server/index.js (serve dist/client)
 import http from 'node:http';
 import { AntigravitySource } from './sources/antigravity/source';
+import { localAntigravityDesktop } from './sources/antigravity/desktop';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
@@ -138,7 +139,8 @@ const agents = new SourceSet([claude]);
 const codexDirs = config.codex ? discoverCodexDirs(process.env, config.home) : [];
 const codex = codexDirs.length ? new CodexSource({ accounts, office, dirs: codexDirs, env: process.env, home: config.home }) : undefined;
 if (codex) agents.add(codex);
-const antigravity = new AntigravitySource(office, accounts);
+const antigravityDesktop = localAntigravityDesktop();
+const antigravity = new AntigravitySource(office, accounts, Date.now, antigravityDesktop);
 agents.add(antigravity);
 // Eventos dos hooks do Codex (POST /api/codex/events, mod/habblaud-codex/hook.mjs): vão para a fonte do Codex ao vivo
 // (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
@@ -233,6 +235,7 @@ if (timeline) hub.onSnapshot((snap) => timeline.ingest(snap));
 // Responder pelo escritório (hook PermissionRequest): age sobre as sessões, então segue a mesma trava.
 const permissions = config.terminal
   ? new PermissionRegistry({
+      antigravity: antigravityDesktop,
       office,
       viewers: () => hub.localSize,
       answerLater: () => !!config.remote?.allow.has('permissions'),
@@ -270,6 +273,7 @@ const dictation = config.messages
 const messages = config.messages
   ? new MessageRegistry({
       office,
+      antigravity: antigravityDesktop,
       demoAgent: (id) => office.demoAgent(id),
       demoDeliver: (id, text) => office.deliverDemoMessage(id, text),
       codex: {

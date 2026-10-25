@@ -1,7 +1,7 @@
 # Novidades
 
 O que entrou em cada versão do Habblaud. Cada versão tem a sua seção aqui, e o texto dela vira as notas da
-[release no GitHub](https://github.com/marmottajr/habblaud/releases) (`npm run release`), que o Habblaud abre em
+[release no GitHub](https://github.com/hoangtuan2k5/habblaud/releases) (`npm run release`), que o Habblaud abre em
 **Configurações › Sobre › Ver o que mudou**.
 
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e os números seguem o
@@ -10,7 +10,21 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+## [1.1.0-rc.1] - 2026-10-25
+
 ### Adicionado
+
+- **Release automática:** tags de versão passam por testes Linux/Windows, compilação e conferência do pacote;
+  a publicação inclui EXE vietnamita, SHA-256, instruções e metadados. Tags de pré-lançamento ficam como prerelease.
+
+- **Permissões e perguntas do Antigravity no escritório:** pedidos locais de comandos e permissões unificadas podem
+  ser aprovados uma vez ou recusados; perguntas exibem as opções originais no cartão existente. A ponte confere novamente o pedido antes da decisão,
+  sem mudar regras ou aprovar automaticamente. Outras formas de interação continuam no Desktop.
+
+- **Antigravity experimental no Windows:** conversa local pelo transcript validado, envio direto à mesma sessão
+  do Desktop (inclusive ociosa) e interrupção do turno pelo próprio Habblaud, sem abrir outra página. A ponte
+  usa o serviço local autenticado do Desktop; credenciais não vão ao navegador. Hooks apenas observam e as
+  configurações de modelo e permissões da sessão permanecem inalteradas.
 
 - **Instalador Windows x64:** pacote por usuário com Node incluído, atalhos para abrir/parar o escritório,
   abertura do navegador após o servidor responder e opção de iniciar ao entrar no Windows. Hooks do
@@ -27,11 +41,18 @@ do meio (0.**3**.0).
 - **Antigravity no escritório local:** hooks de início, chamadas de modelo, ferramentas e fim de turno
   alimentam agentes e salas reais, sem alterar permissões. Instalação, remoção e verificação por
   `npm run antigravity:install|uninstall|status`; preserva outros hooks e faz backup antes de alterar.
-  Sem eventos por 24 horas, a sessão sai do escritório; reinicie um turno após reiniciar o Habblaud.
-  Mensagens, aprovações, histórico de conversa, subagentes e uso de tokens ainda não são integrados.
+  Sem eventos por 24 horas, a sessão sai do escritório. No Windows, a ponte local recupera sessões recentes
+  do Desktop e permite conversa e respostas aos pedidos suportados; subagentes e uso de tokens não são integrados.
   Agentes do Antigravity ficam fora do Habblaud World, cujo protocolo ainda não aceita essa ferramenta.
 
 ### Corrigido
+
+- **Conversa do Antigravity:** mostra apenas o pedido do usuário, sem o envelope `USER_REQUEST` e os blocos
+  `ADDITIONAL_METADATA` acrescentados pelo Desktop. Mantém formatação e tags escritas dentro do pedido.
+
+- **Compilação nativa no Windows:** corrige o separador do curinga de arquivos do NSIS e lê o script
+  do instalador explicitamente como UTF-8, preservando o vietnamita. A verificação de traduções normaliza
+  CRLF como o JavaScript; testes de disco/shell recebem tempo para executar no Windows.
 
 - **Revisão da instalação Windows:** launcher vietnamita em UTF-8 com BOM para Windows PowerShell 5.1;
   atualização/desinstalação interrompidas quando não conseguem parar o servidor pertencente à instalação.
@@ -624,7 +645,8 @@ Primeira versão publicada.
   Subagentes chegam, trabalham e entregam ao principal. Mostra as duas contas, com o uso de 5 horas e semanal de
   cada uma (tap de statusline), além de feed de atividade, avisos e modo demonstração. Roda no Node ou no Docker local.
 
-[Não lançado]: https://github.com/marmottajr/habblaud/compare/v1.0.3...HEAD
+[Não lançado]: https://github.com/hoangtuan2k5/habblaud/compare/v1.1.0-rc.1...HEAD
+[1.1.0-rc.1]: https://github.com/hoangtuan2k5/habblaud/releases/tag/v1.1.0-rc.1
 [1.0.3]: https://github.com/marmottajr/habblaud/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/marmottajr/habblaud/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/marmottajr/habblaud/compare/v1.0.0...v1.0.1

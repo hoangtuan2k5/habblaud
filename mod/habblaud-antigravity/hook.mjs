@@ -1,4 +1,4 @@
-// Observe only: never change Antigravity permissions or inject instructions.
+// Observe activity and transcript metadata; never change Antigravity permissions.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -27,7 +27,7 @@ try {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('invalid port');
   // Forward only metadata needed for the local office, never transcript contents or tool output.
   const body = JSON.stringify({ event, conversationId: raw.conversationId, workspacePaths: raw.workspacePaths,
-    toolCall: raw.toolCall, error: raw.error });
+    toolCall: raw.toolCall, error: raw.error, transcriptPath: raw.transcriptPath });
   const response = await fetch(`http://127.0.0.1:${port}/api/antigravity/events`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(1500),
   });

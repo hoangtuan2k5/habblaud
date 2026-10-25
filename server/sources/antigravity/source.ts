@@ -1,15 +1,30 @@
-import { isAbsolute } from 'node:path';
+import { realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { isAbsolute, join, resolve } from 'node:path';
 import { describeTool } from '../../../shared/activity';
 import { tr } from '../../../shared/i18n';
 import type { SourceInfo } from '../../../shared/types';
 import type { AccountsService } from '../../accounts/service';
 import type { Office } from '../../model/office';
 import type { AgentSource } from '../source';
+import { createAntigravityTerminalParser } from './terminal';
+import type { AntigravityDesktop, DesktopSession } from './desktop';
 
 export const ANTIGRAVITY_EVENTS = ['SessionStart', 'PreInvocation', 'PostInvocation', 'PreToolUse', 'PostToolUse', 'Stop'] as const;
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 type Rec = Record<string, unknown>;
 const record = (v: unknown): v is Rec => !!v && typeof v === 'object' && !Array.isArray(v);
+
+export function verifiedTranscript(path: unknown, conversationId: string, home = homedir()): string | undefined {
+  if (typeof path !== 'string' || path.length > 4096 || !isAbsolute(path) || !/^[a-zA-Z0-9-]{1,128}$/.test(conversationId)) return undefined;
+  try {
+    const root = realpathSync(join(home, '.gemini/antigravity/brain'));
+    const expected = join(root, conversationId, '.system_generated/logs/transcript.jsonl');
+    const actual = realpathSync(path);
+    const same = (a: string, b: string) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+    return same(resolve(path), expected) && same(actual, expected) ? actual : undefined;
+  } catch { return undefined; }
+}
 
 export function validEvent(v: unknown): v is Rec & { event: string; conversationId: string; workspacePaths: string[] } {
   return record(v) && typeof v.event === 'string' && (ANTIGRAVITY_EVENTS as readonly string[]).includes(v.event)
@@ -28,16 +43,23 @@ export class AntigravitySource implements AgentSource {
   private timer?: ReturnType<typeof setInterval>;
   private seq = 0;
   private account?: string;
+  private transcripts = new Map<string, string>();
 
-  constructor(private readonly office: Office, private readonly accounts: AccountsService, private readonly now = Date.now) {}
+  constructor(private readonly office: Office, private readonly accounts: AccountsService, private readonly now = Date.now, private readonly desktop?: Pick<AntigravityDesktop, 'list'>) {}
 
   start(): void {
     this.timer = setInterval(() => this.expire(), 60_000);
     this.timer.unref?.();
+    if (this.desktop) {
+      this.office.beginBoot();
+      void this.desktop.list().then(sessions => { for (const session of sessions) this.restore(session); })
+        .finally(() => this.office.endBoot()).catch(() => {});
+    }
   }
 
   stop(): void { clearInterval(this.timer); }
-  transcriptPathOf(): undefined { return undefined; }
+  transcriptPathOf(agentId: string): string | undefined { return this.transcripts.get(agentId); }
+  terminalParser() { return createAntigravityTerminalParser(); }
   sources(): SourceInfo[] {
     return this.account ? [{ label: 'Antigravity', provider: this.provider, path: 'hooks', sessions: this.sessions.size, ok: true }] : [];
   }
@@ -46,20 +68,37 @@ export class AntigravitySource implements AgentSource {
     for (const [id, at] of this.sessions) if (this.now() - at >= SESSION_TTL_MS) {
       this.office.closeMain(id);
       this.sessions.delete(id);
+      this.transcripts.delete(id);
     }
+  }
+
+  private ensureAccount(): string {
+    if (!this.account) this.account = this.accounts.setProviderAccounts(this.provider, [{ dir: 'antigravity', detected: {
+      id: 'antigravity', configDir: 'hooks', short: 'AG', name: 'Antigravity', color: '#5cc97b',
+    } }])[0].id;
+    return this.account;
+  }
+
+  private restore(session: DesktopSession): void {
+    if (!/^[a-zA-Z0-9-]{1,128}$/.test(session.conversationId) || !session.workspacePaths.length
+      || !session.workspacePaths.every(path => isAbsolute(path)) || this.now() - session.lastAt >= SESSION_TTL_MS) return;
+    const id = `antigravity:${session.conversationId}`;
+    if (this.sessions.has(id)) return; // A live hook is newer than the startup snapshot.
+    const transcript = verifiedTranscript(session.transcriptPath, session.conversationId);
+    if (transcript) this.transcripts.set(id, transcript);
+    this.office.addMain({ id, provider: this.provider, account: this.ensureAccount(), sessionId: session.conversationId,
+      cwd: session.workspacePaths[0], role: tr('Agente principal'), startedAt: session.startedAt, status: session.status });
+    this.sessions.set(id, session.lastAt);
   }
 
   apply(raw: unknown): boolean {
     if (!validEvent(raw)) return false;
     const now = this.now();
-    if (!this.account) {
-      const dir = 'antigravity';
-      this.account = this.accounts.setProviderAccounts(this.provider, [{ dir, detected: {
-        id: dir, configDir: 'hooks', short: 'AG', name: 'Antigravity', color: '#5cc97b',
-      } }])[0].id;
-    }
+    const account = this.ensureAccount();
     const id = `antigravity:${raw.conversationId}`;
-    this.office.addMain({ id, provider: this.provider, account: this.account, sessionId: raw.conversationId,
+    const transcript = verifiedTranscript(raw.transcriptPath, raw.conversationId);
+    if (transcript) this.transcripts.set(id, transcript);
+    this.office.addMain({ id, provider: this.provider, account, sessionId: raw.conversationId,
       cwd: raw.workspacePaths[0], role: tr('Agente principal'), startedAt: now, status: raw.event === 'Stop' ? 'idle' : 'working' });
     this.sessions.set(id, now);
     const tool = record(raw.toolCall) ? raw.toolCall : undefined;

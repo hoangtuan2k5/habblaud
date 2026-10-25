@@ -134,6 +134,7 @@ function isLocalOnlyPath(path: string): boolean {
 
 function isMessagesPath(path: string): boolean {
   return (
+    /^\/api\/agents\/[^/]+\/antigravity\/stop$/.test(path) ||
     path === '/api/messages' ||
     path.startsWith('/api/messages/') ||
     path === '/api/mod/inbox' ||

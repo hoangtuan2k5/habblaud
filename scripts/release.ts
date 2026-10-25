@@ -1,12 +1,10 @@
-// Publica a versão do package.json no GitHub: confere se o CHANGELOG.md tem a seção dela, cria a tag vX.Y.Z e a
-// release com o texto dessa seção como notas (é o que o Habblaud abre em Configurações › Sobre › Ver o que mudou).
-//   npm run release                -> publica (precisa do gh autenticado)
+// Confere a seção da versão no CHANGELOG.md e envia a tag vX.Y.Z; o workflow Release testa, compila o EXE e publica.
+//   npm run release                -> envia a tag e inicia o workflow
 //   npm run release -- --dry-run   -> só confere e mostra as notas
 // Antes: suba a versão no package.json (npm version minor --no-git-tag-version), escreva a seção no CHANGELOG.md e
 // faça o merge na main.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -116,17 +114,9 @@ function main(argv: string[]): void {
     return;
   }
 
-  const dir = mkdtempSync(join(tmpdir(), 'habblaud-release-'));
-  try {
-    const file = join(dir, 'notas.md');
-    writeFileSync(file, `${notes}\n`);
-    run('git', ['tag', '-a', tag, '-m', `Habblaud ${tag}`]);
-    run('git', ['push', 'origin', tag]);
-    const url = run('gh', ['release', 'create', tag, '--verify-tag', '--title', `Habblaud ${tag}`, '--notes-file', file]);
-    console.log(`✓ Release publicada: ${url}`);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  run('git', ['tag', '-a', tag, '-m', `Habblaud ${tag}`]);
+  run('git', ['push', 'origin', tag]);
+  console.log('✓ Tag enviada. O workflow Release testa, compila o EXE e publica a release completa no GitHub.');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

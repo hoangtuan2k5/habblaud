@@ -23,6 +23,24 @@ setQuiet(true);
 const MAIN = 'acc:1';
 const SESSION = 'sess-1';
 
+it('guards stopping an Antigravity turn with local message access and JSON origin checks', async () => {
+  let stops = 0;
+  for (const enabled of [false, true]) {
+    const server = await serveMessages({ enabled, registry: { antigravity: {
+      send: async () => ({ ok: true }), stop: async () => { stops++; return { ok: true }; },
+    } } });
+    const id = 'antigravity:stop-test';
+    server.office.addMain({ id, provider: 'antigravity', account: 'agy', sessionId: 'stop-test', cwd: '/project', role: 'Agente principal', startedAt: 0, status: 'working' });
+    const route = `/api/agents/${encodeURIComponent(id)}/antigravity/stop`;
+    try {
+      expect((await request(server.base, route, { method: 'POST', headers: { Origin: 'https://attacker.example' }, body: {} })).status).toBe(403);
+      expect(stops).toBe(0);
+      expect((await request(server.base, route, { method: 'POST', body: {} })).status).toBe(enabled ? 200 : 403);
+      expect(stops).toBe(enabled ? 1 : 0);
+    } finally { await server.close(); }
+  }
+});
+
 interface MessageServer {
   base: string;
   office: Office;

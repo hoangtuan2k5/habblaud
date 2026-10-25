@@ -1,5 +1,14 @@
 # Windows installer (preview)
 
+Version 1.1.0-rc.1 includes Desktop questions and command/unified permission prompts in the existing
+Habblaud card. Decisions are explicit and checked against the current pending request before delivery.
+Other interaction types remain in Desktop. Real Desktop question delivery was verified; real tool approval
+and running-turn cancellation still need separate checks. See `ANTIGRAVITY-CONTROL-TRIAL.vi.md`.
+
+Pushing a version tag runs `.github/workflows/release.yml`: Linux checks, Windows focused tests,
+EXE build and isolated package check, then publication with EXE, SHA-256, instructions and build metadata.
+This is not evidence of Desktop end-to-end operation on the hosted runner, which has no signed-in AGY.
+
 Build `dist/windows/Habblaud-Setup-<version>-win-x64-vi-direct-hooks.exe` with:
 
 ```sh
@@ -18,6 +27,13 @@ The per-user NSIS installer includes Vietnamese-only UI, Desktop/Start menu shor
 optional Startup shortcut, optional Antigravity hooks and an uninstaller. Installation is fixed at
 `%LOCALAPPDATA%\Programs\Habblaud`; no admin rights or separate Node/Git/Docker are required.
 Windows 10/11 x64 is the preview target; ARM64 and 32-bit runtimes are not supplied.
+
+The experimental Antigravity Desktop Control build reads validated local conversation transcripts,
+sends messages to the same running or idle Desktop conversation and cancels its current invocation
+inside Habblaud. It uses the authenticated loopback service of the Windows Desktop app; no credentials
+are exposed to the browser, and existing model/tool-permission settings are preserved. Background tasks
+are not killed by cancellation. This internal Desktop interface may change between versions. See
+`ANTIGRAVITY-CONTROL-TRIAL.vi.md` for the separate installer name and verification limits.
 
 `launch.vbs` invokes `launcher.ps1` hidden. A per-session mutex serializes launches. The launcher
 reuses a healthy local Habblaud or starts bundled Node, waits for health and opens the default browser.

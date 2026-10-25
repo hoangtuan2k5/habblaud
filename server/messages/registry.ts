@@ -23,6 +23,7 @@ import { describeMessage, MESSAGE_MAX } from '../../shared/messages';
 import type { Activity, AgentInfo, InboxMessage, OutboxMessage } from '../../shared/types';
 import { errMsg, log } from '../log';
 import type { CodexQueueResult, CodexQueueRunner } from './codex';
+import type { AntigravityDesktop, DesktopResult } from '../sources/antigravity/desktop';
 import { tr } from '../../shared/i18n';
 
 /** Sessão que perguntou pela caixa de entrada há até este tempo: recebe mensagens (canMessage). */
@@ -82,6 +83,7 @@ export interface MessageRegistryOptions {
   demoDeliver?: (agentId: string, text: string) => boolean;
   /** Mensagens aos agentes do Codex; ausente = eles não recebem. */
   codex?: CodexDeliveryOptions;
+  antigravity?: Pick<AntigravityDesktop, 'send' | 'stop'>;
   now?: () => number;
   /** Intervalo do relógio interno (start). */
   tickMs?: number;
@@ -123,6 +125,7 @@ interface Entry {
   demo?: boolean;
   /** Mensagem a um agente do Codex: sai pelo entregador do Codex ('node' = o servidor rodou; 'bridge' = o auxiliar). */
   codex?: true;
+  antigravity?: true;
   via?: 'node' | 'bridge';
   /** Falhou por falta de confirmação: uma confirmação atrasada ainda corrige a situação. */
   late?: boolean;
@@ -152,6 +155,7 @@ const isFinal = (e: Entry) => e.msg.status === 'delivered' || e.msg.status === '
 function unavailableReason(a: AgentInfo, reachable: boolean): string | undefined {
   if (a.kind !== 'main') return tr('subagentes não recebem mensagens: mande para o agente principal');
   if (!present(a)) return tr('o agente já saiu do escritório');
+  if (!reachable && a.provider === 'antigravity') return tr('Para responder, use o Antigravity');
   if (!reachable) return a.provider === 'codex' ? ERR_CODEX_UNAVAILABLE : tr('a sessão não está com o plugin habblaud-mensagens conectado (npm run mod:install)');
   return undefined;
 }
@@ -234,12 +238,14 @@ export class MessageRegistry {
     const out = new Set<string>();
     for (const id of this.seen.keys()) if (this.canMessage(id)) out.add(id);
     if (this.codexAvailable()) for (const a of this.opts.office.list()) if (a.provider === 'codex' && a.kind === 'main' && present(a)) out.add(a.id);
+    if (this.opts.antigravity) for (const a of this.opts.office.list()) if (a.provider === 'antigravity' && this.canMessage(a.id)) out.add(a.id);
     return out;
   }
 
   canMessage(agentId: string): boolean {
     const a = this.opts.office.get(agentId);
     if (a?.provider === 'codex') return this.codexAvailable() && present(a) && a.kind === 'main';
+    if (a?.provider === 'antigravity') return !!this.opts.antigravity && a.kind === 'main' && present(a);
     const at = this.seen.get(agentId);
     if (at === undefined || this.now() - at >= this.presenceMs) return false;
     return present(a) && a.kind === 'main';
@@ -273,9 +279,11 @@ export class MessageRegistry {
     const entry: Entry = { msg: { id, agentId, status: 'queued', createdAt: now, updatedAt: now }, text, activity: describeMessage(text), target: agent.sessionId };
     if (demo) entry.demo = true;
     else if (real?.provider === 'codex') entry.codex = true;
+    else if (real?.provider === 'antigravity') entry.antigravity = true;
     this.messages.set(id, entry);
     const out = { ...entry.msg };
     if (entry.codex) this.pumpCodex();
+    if (entry.antigravity) this.pumpAntigravity();
     return { message: out };
   }
 
@@ -283,6 +291,13 @@ export class MessageRegistry {
   get(id: string): OutboxMessage | undefined {
     const e = this.messages.get(id);
     return e ? { ...e.msg } : undefined;
+  }
+
+  async stopAntigravity(agentId: string): Promise<DesktopResult> {
+    const agent = this.opts.office.get(agentId);
+    if (!agent || agent.provider !== 'antigravity' || agent.kind !== 'main' || !present(agent) || !this.opts.antigravity) return { ok: false, error: ERR_GONE };
+    if (agent.status !== 'working') return { ok: false, error: ERR_REFUSED };
+    return this.opts.antigravity.stop(agent.sessionId);
   }
 
   /**
@@ -294,10 +309,10 @@ export class MessageRegistry {
     const session = shortStr(r?.session, ID_MAX);
     if (!r || !session) throw new InvalidRequest('esperado {session, account?}');
     const account = shortStr(r.account, ID_MAX);
-    // O plugin é do Claude Code: agentes do Codex nunca recebem por aqui.
+    // Each transport only fetches its own provider, even if session ids collide.
     const agent = this.opts.office
       .list()
-      .find((a) => a.kind === 'main' && a.provider !== 'codex' && a.sessionId === session && (!account || a.account === account) && present(a));
+      .find((a) => a.kind === 'main' && (a.provider ?? 'claude') === 'claude' && a.sessionId === session && (!account || a.account === account) && present(a));
     if (!agent) return [];
 
     const now = this.now();
@@ -330,7 +345,7 @@ export class MessageRegistry {
     const now = this.now();
     for (const x of ackResults(r)) {
       const e = this.messages.get(x.id);
-      if (!e || e.demo || e.codex || e.session !== session) continue;
+      if (!e || e.demo || e.codex || e.antigravity || e.session !== session) continue;
       if (e.msg.status !== 'sent' && !(e.msg.status === 'failed' && e.late)) continue;
       if (x.ok) this.finish(e, 'delivered', now);
       else this.fail(e, now, x.error ?? ERR_REFUSED);
@@ -425,6 +440,7 @@ export class MessageRegistry {
       if (!this.opts.codex?.run) this.opts.office.markDirty();
     }
     this.pumpCodex();
+    this.pumpAntigravity();
   }
 
   // ---------------------------------------------------------------- internos
@@ -462,20 +478,39 @@ export class MessageRegistry {
       e.sentAt = now;
       e.via = 'node';
       run({ codexHome: target.codexHome, thread: target.thread, text: e.text }).then(
-        (r) => this.codexDone(e, r),
-        (err: unknown) => this.codexDone(e, { ok: false, error: errMsg(err) }),
+        (r) => this.deliveryDone(e, r),
+        (err: unknown) => this.deliveryDone(e, { ok: false, error: errMsg(err) }),
       );
     }
   }
 
   /** Fim de um `codex queue` rodado daqui. */
-  private codexDone(e: Entry, r: CodexQueueResult): void {
+  private deliveryDone(e: Entry, r: CodexQueueResult): void {
     if (this.messages.get(e.msg.id) !== e) return;
     if (e.msg.status !== 'sent' && !(e.msg.status === 'failed' && e.late)) return;
     const now = this.now();
     if (r.ok) this.finish(e, 'delivered', now);
-    else this.fail(e, now, truncate(r.error, ERROR_MAX) || ERR_CODEX_REFUSED);
+    else this.fail(e, now, truncate(r.error, ERROR_MAX) || (e.antigravity ? ERR_REFUSED : ERR_CODEX_REFUSED));
     this.pumpCodex();
+    this.pumpAntigravity();
+  }
+
+  private pumpAntigravity(): void {
+    const desktop = this.opts.antigravity;
+    if (!desktop) return;
+    const busy = new Set([...this.messages.values()].filter(e => e.antigravity && e.msg.status === 'sent').map(e => e.msg.agentId));
+    for (const entry of this.messages.values()) {
+      if (!entry.antigravity || entry.msg.status !== 'queued' || busy.has(entry.msg.agentId)) continue;
+      const agent = this.opts.office.get(entry.msg.agentId);
+      if (!present(agent) || agent.sessionId !== entry.target) { this.fail(entry, this.now(), ERR_SESSION_CHANGED); continue; }
+      busy.add(agent.id);
+      this.setStatus(entry, 'sent', this.now());
+      entry.sentAt = this.now();
+      desktop.send({ conversationId: agent.sessionId, text: entry.text }).then(
+        result => this.deliveryDone(entry, result),
+        () => this.deliveryDone(entry, { ok: false, error: ERR_REFUSED }),
+      );
+    }
   }
 
   private setStatus(e: Entry, status: OutboxMessage['status'], now: number): void {

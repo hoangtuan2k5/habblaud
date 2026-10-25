@@ -17,16 +17,22 @@ HABBLAUD — BẢN THỬ NGHIỆM WINDOWS 10/11 X64
 
 GIỚI HẠN BẢN THỬ
 - Theo dõi phiên Claude/Codex trên cùng tài khoản Windows và hoạt động hook Antigravity.
-- Antigravity Windows hiện hiển thị hoạt động bắt đầu/kết thúc lượt; chưa có tên công cụ,
-  lịch sử phản hồi, nhắn tin hay điều khiển quyền qua Habblaud.
+- Antigravity Windows hiển thị hoạt động và nội dung hội thoại qua transcript cục bộ.
+  Bản thử Desktop Control cho phép gửi tiếp vào cùng phiên kể cả khi đang rảnh và
+  dừng lượt ngay trong Habblaud. Cần Antigravity Desktop chạy trên cùng tài khoản Windows.
+  Không thay đổi model/quyền công cụ; nút dừng lượt không kết thúc các tác vụ nền.
 - Chưa kèm terminal PTY tương tác và bộ cài plugin Claude/Codex; các tích hợp nâng cao
   cần cấu hình riêng. Không có icon khay hệ thống, dùng shortcut Stop để dừng.
 - Chưa ký số; Windows SmartScreen có thể cảnh báo. Chỉ cài tệp do người quản lý tin cậy cung cấp.
 - Máy chủ chỉ mở trên loopback, không tự công khai ra mạng và tắt Habblaud World.
 - Lỗi khởi động: xem %USERPROFILE%\.habblaud\desktop-logs\server-error.log.
-- Bản này được đóng gói trên Linux; phải thử cài/chạy/gỡ trên Windows thật trước khi giao khách.
+- Bản thử cần được đối chiếu với báo cáo kiểm tra Windows đi kèm trước khi giao khách.
 
 ĐỐI CHIẾU BẢN SỬA
+- Bản 1.1.0-rc.1 hiển thị câu hỏi và yêu cầu quyền/lệnh được hỗ trợ ngay trong Habblaud.
+  Anh tự chọn đáp án hoặc cho phép một lần/từ chối; ứng dụng không tự duyệt.
+  Các dạng tương tác chưa hỗ trợ vẫn xử lý trong Desktop. Luồng câu hỏi đã thử với Desktop thật;
+  duyệt lệnh thật và hủy lượt đang chạy vẫn cần kiểm tra riêng. Đây là bản thử nghiệm.
 - Lệnh hook gọi Node trực tiếp, không lồng thêm cmd.exe /d /s /c.
 - Đường dẫn có khoảng trắng được đặt trong ngoặc kép; không dùng cố định tên người dùng.
 - Lệnh kiểm tra status chỉ xác nhận có cấu hình, không khẳng định App đã gọi hook.

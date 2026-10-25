@@ -65,6 +65,14 @@ export function createMessageRoutes(registry: MessageRegistry): (req: IncomingMe
   };
 
   return (req, res, path) => {
+    const stop = /^\/api\/agents\/([^/]+)\/antigravity\/stop$/.exec(path);
+    if (stop) return post(req, res, async (request, response) => {
+      await readJson(request);
+      let id: string;
+      try { id = decodeURIComponent(stop[1]); } catch { throw new InvalidRequest(tr('id inválido')); }
+      const result = await registry.stopAntigravity(id);
+      sendJson(response, result.ok ? 200 : 409, result.ok ? { ok: true } : { error: result.error });
+    });
     if (path === '/api/messages') return post(req, res, send);
     if (path === '/api/mod/inbox') return post(req, res, inbox);
     if (path === '/api/mod/inbox/ack') return post(req, res, ack);

@@ -1,19 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AccountsService } from '../../accounts/service';
 import { NameStore } from '../../model/names';
 import { Office } from '../../model/office';
 import { configure } from '../../../scripts/antigravity-install';
 import { AntigravitySource, SESSION_TTL_MS, validEvent } from './source';
+import type { DesktopSession } from './desktop';
 
-function setup() {
+function setup(desktop?: { list(): Promise<DesktopSession[]> }) {
   let now = 1_790_000_000_000;
   const accounts = new AccountsService({ dirs: [], home: '/tmp', env: {}, onChange() {} });
   const office = new Office({ names: new NameStore(null), version: 'test', startedAt: now,
     accounts: (s) => accounts.list(s), sources: () => [], accountName: () => undefined, now: () => now });
-  const source = new AntigravitySource(office, accounts, () => now);
+  const source = new AntigravitySource(office, accounts, () => now, desktop);
   return { source, office, advance: () => { now += SESSION_TTL_MS; } };
 }
 const event = (name: string, extra = {}) => ({ event: name, conversationId: 'test-123', workspacePaths: ['/project'], ...extra });
+
+it('restores actual Desktop sessions without manufacturing hook activity', async () => {
+  const { source, office } = setup({ list: async () => [{ conversationId: 'restored', workspacePaths: ['/project'],
+    transcriptPath: '/nonexistent', status: 'idle', startedAt: 1_789_999_990_000, lastAt: 1_790_000_000_000 }] });
+  source.start();
+  try {
+    await vi.waitFor(() => expect(office.list()).toHaveLength(1));
+    expect(office.list()[0]).toMatchObject({ id: 'antigravity:restored', status: 'idle', startedAt: 1_789_999_990_000 });
+    expect(office.detail('antigravity:restored')?.history).toEqual([]);
+  } finally { source.stop(); }
+});
 
 describe('Antigravity local hooks', () => {
   it('rejects malformed events without adding an agent', () => {

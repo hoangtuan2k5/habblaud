@@ -34,7 +34,7 @@ writeFileSync(resolve(stage, 'runtime/node.exe'), binary);
 writeFileSync(resolve(stage, 'runtime/LICENSE'), await download(`https://raw.githubusercontent.com/nodejs/node/v${nodeVersion}/LICENSE`));
 const installer = resolve(out, `Habblaud-Setup-${version}-win-x64-vi-direct-hooks.exe`);
 const defines = [`PAYLOAD=${stage}`, `OUTPUT=${installer}`, `APP_VERSION=${version}`].map((value) => `${process.platform === 'win32' ? '/' : '-'}D${value}`);
-execFileSync(process.env.MAKENSIS || 'makensis', [...defines, resolve(root, 'deployment/windows/installer.nsi')], { cwd: root, stdio: 'inherit' });
+execFileSync(process.env.MAKENSIS || 'makensis', ['-INPUTCHARSET', 'UTF8', ...defines, resolve(root, 'deployment/windows/installer.nsi')], { cwd: root, stdio: 'inherit' });
 const digest = createHash('sha256').update(readFileSync(installer)).digest('hex');
 writeFileSync(`${installer}.sha256`, `${digest}  ${installer.split(/[\\/]/).pop()}\n`);
 console.log(`Windows installer: ${installer}`);

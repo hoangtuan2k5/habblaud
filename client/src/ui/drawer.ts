@@ -42,7 +42,7 @@ import { access } from '../net/access';
 import { PermissionCard } from './permission';
 import { canRenameRoom } from './roomrename';
 import { accountChipLabel, accountProvider, CODEX_LIVE_HINT, codexApprovalLabel, providerOf } from './provider';
-import { ptyControllable } from './ptyapi';
+import { postPty, ptyControllable } from './ptyapi';
 import { createAgentRow, updateAgentRow } from './rows';
 import { SocialSection } from './social';
 import { TERMINAL_UNAVAILABLE_HINT, type TerminalControl } from './terminal';
@@ -218,6 +218,8 @@ class AgentView {
   private termLabel: HTMLElement;
   /** Por que o terminal não abre: no celular não há hover para ler o title, então o toque mostra o motivo aqui. */
   private termWhy: HTMLElement;
+  private agStop: HTMLButtonElement;
+  private stoppingAG = false;
   private termWhyTimer: ReturnType<typeof setTimeout> | null = null;
   private alert: HTMLElement;
   private alertText: HTMLElement;
@@ -320,6 +322,8 @@ class AgentView {
     );
 
     this.termWhy = h('p', { class: 'ui-term-cta__why', hidden: true, attrs: { role: 'status' } });
+    this.agStop = h('button', { class: 'ui-btn', type: 'button', hidden: true, text: tr('Parar turno do Antigravity'),
+      on: { click: () => void this.stopAntigravity() } });
 
     this.alertText = h('p', { class: 'ui-alert__text' });
     this.alertQuestions = h('div', { class: 'ui-ask', hidden: true });
@@ -413,6 +417,7 @@ class AgentView {
       statusRow,
       this.termBtn,
       this.termWhy,
+      this.agStop,
       this.alert,
       this.perm.el,
       this.shellBox,
@@ -490,6 +495,18 @@ class AgentView {
     return replaying ? at : undefined;
   }
 
+  private async stopAntigravity(): Promise<void> {
+    const id = this.id;
+    if (this.stoppingAG || this.agStop.disabled || !id) return;
+    this.stoppingAG = true;
+    this.ctx.invalidate();
+    try {
+      await postPty(`/api/agents/${encodeURIComponent(id)}/antigravity/stop`, {});
+    } catch (error) {
+      if (this.id === id) { setText(this.termWhy, error instanceof Error ? error.message : tr('erro desconhecido')); setHidden(this.termWhy, false); }
+    } finally { this.stoppingAG = false; this.ctx.invalidate(); }
+  }
+
   /** Abre (ou fecha) o terminal deste agente; desligado sem acesso local ou depois que ele saiu. */
   toggleTerminal(): void {
     if (!this.id) return;
@@ -535,6 +552,8 @@ class AgentView {
     updateAvatar(this.avatar, a, 'lg');
     setStyleVar(this.avatar, '--acc', account?.color ?? '#8b98b3');
     setText(this.name, a.name);
+    setHidden(this.agStop, provider !== 'antigravity' || a.kind !== 'main' || this.ctx.store.replaying || !a.canMessage || !access().messages);
+    this.agStop.disabled = this.stoppingAG || a.status !== 'working';
     this.character.render(a, !!live);
     setText(this.role, roleLabel(a));
     setVariant(this.role, 'ui-role--', a.kind);

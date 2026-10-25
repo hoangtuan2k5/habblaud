@@ -1,7 +1,7 @@
 // Registro das mensagens pelo escritório: presença das sessões (canMessage no snapshot), validação, limites, entrega
 // ao plugin, confirmação, prazos, agente que sai, limpeza das resolvidas e a entrega fictícia do demo.
 // Tudo com dados sintéticos e relógio injetado.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { AgentInfo } from '../../shared/types';
 import { setQuiet } from '../log';
 import { NameStore } from '../model/names';
@@ -20,6 +20,7 @@ import {
   QUEUED_TIMEOUT_MS,
   SENT_TIMEOUT_MS,
   type SendResult,
+  type MessageRegistryOptions,
 } from './registry';
 
 setQuiet(true);
@@ -29,7 +30,7 @@ const SESSION = 'sess-1';
 const OTHER = 'acc:2';
 const SUB = `${SESSION}:a1b2c3`;
 
-function setup() {
+function setup(extra: Partial<MessageRegistryOptions> = {}) {
   let now = 1_000_000;
   const clock = { now: () => now, advance: (ms: number) => (now += ms) };
   let registry: MessageRegistry | undefined;
@@ -50,11 +51,41 @@ function setup() {
     demoAgent: (id) => office.demoAgent(id),
     demoDeliver: (id, text) => office.deliverDemoMessage(id, text),
     now: clock.now,
+    ...extra,
   });
   return { office, registry, clock };
 }
 
 const snapAgent = (office: Office, id: string): AgentInfo | undefined => office.commit().snapshot.agents.find((a) => a.id === id);
+
+it('sends to the exact Antigravity Desktop session while idle, orders messages and reports native failures', async () => {
+  let finish!: (result: { ok: true } | { ok: false; error: string }) => void;
+  const send = vi.fn(() => new Promise<{ ok: true } | { ok: false; error: string }>(resolve => { finish = resolve; }));
+  const stop = vi.fn(async () => ({ ok: true as const }));
+  const { office, registry } = setup({ antigravity: { send, stop } });
+  const id = 'antigravity:agy-test';
+  office.addMain({ id, provider: 'antigravity', account: 'agy', sessionId: 'agy-test', cwd: '/project', role: 'Agente principal', startedAt: 0, status: 'idle' });
+  expect(registry.canMessage(id)).toBe(true);
+  const first = sent(registry.send({ agentId: id, text: 'user-request' }));
+  const second = sent(registry.send({ agentId: id, text: 'second-request' }));
+  expect(registry.inbox({ session: 'agy-test' })).toEqual([]);
+  expect(send).toHaveBeenCalledWith({ conversationId: 'agy-test', text: 'user-request' });
+  expect(send).toHaveBeenCalledTimes(1);
+  expect(registry.get(first)?.status).toBe('sent');
+  expect(registry.get(second)?.status).toBe('queued');
+  finish({ ok: true });
+  await vi.waitFor(() => expect(registry.get(first)?.status).toBe('delivered'));
+  expect(send).toHaveBeenLastCalledWith({ conversationId: 'agy-test', text: 'second-request' });
+  finish({ ok: false, error: 'Desktop unavailable' });
+  await vi.waitFor(() => expect(registry.get(second)?.status).toBe('failed'));
+  expect(JSON.stringify(registry.get(first))).not.toContain('user-request');
+  expect((await registry.stopAntigravity(id)).ok).toBe(false);
+  office.get(id)!.status = 'working';
+  expect(await registry.stopAntigravity(id)).toEqual({ ok: true });
+  expect(stop).toHaveBeenCalledWith('agy-test');
+  office.get(id)!.status = 'offline';
+  expect(registry.send({ agentId: id, text: 'gone' })).toHaveProperty('error', 'unavailable');
+});
 
 function sent(r: SendResult): string {
   if (!('message' in r)) throw new Error(`recusada: ${JSON.stringify(r)}`);

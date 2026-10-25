@@ -1,14 +1,14 @@
 {
   "name": "habblaud",
-  "version": "1.0.3",
+  "version": "1.1.0-rc.1",
   "private": true,
   "description": "Escritório virtual animado que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/marmottajr/habblaud.git"
+    "url": "git+https://github.com/hoangtuan2k5/habblaud.git"
   },
-  "homepage": "https://github.com/marmottajr/habblaud#readme",
+  "homepage": "https://github.com/hoangtuan2k5/habblaud#readme",
   "type": "module",
   "engines": {
     "node": ">=22.12"

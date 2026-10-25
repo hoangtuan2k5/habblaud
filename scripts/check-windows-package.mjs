@@ -29,7 +29,7 @@ try {
   execFileSync(process.execPath, [tool, 'uninstall', '--file', config, '--owner', process.execPath], { stdio: 'pipe' });
   assert.deepEqual(JSON.parse(readFileSync(config)), {});
   server = spawn(process.execPath, [join(stage, 'dist/server/index.js')], {
-    env: { ...process.env, HOME: temp, HABBLAUD_DATA_DIR: temp, HABBLAUD_CLAUDE_DIRS: temp, HABBLAUD_CODEX: '0', HABBLAUD_HOST: '127.0.0.1', HABBLAUD_PORT: '14747', HABBLAUD_WORLD: '0', HABBLAUD_UPDATE_CHECK: '0', HABBLAUD_REMOTE_USER: '', HABBLAUD_LANG: 'vi' }, stdio: ['ignore', 'ignore', 'pipe'],
+    env: { ...process.env, HOME: temp, USERPROFILE: temp, HABBLAUD_DATA_DIR: temp, HABBLAUD_CLAUDE_DIRS: temp, HABBLAUD_CODEX: '0', HABBLAUD_HOST: '127.0.0.1', HABBLAUD_PORT: '14747', HABBLAUD_WORLD: '0', HABBLAUD_UPDATE_CHECK: '0', HABBLAUD_REMOTE_USER: '', HABBLAUD_LANG: 'vi' }, stdio: ['ignore', 'ignore', 'pipe'],
   });
   let errors = ''; server.stderr.on('data', (data) => { errors += data; });
   let health;

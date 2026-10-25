@@ -6,6 +6,33 @@ import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { configure, hookCommand, quoteHookPath } from '../../scripts/antigravity-install';
 
+it('keeps hooks observation-only even when a response contains injection or approval fields', async () => {
+  let ok = true;
+  const server = createServer((_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok, injectSteps: [{ userMessage: 'explicit-user-request', toolCall: { name: 'ignored' } }], decision: 'auto_approve' }));
+  });
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  const port = (server.address() as { port: number }).port;
+  const hook = resolve(import.meta.dirname, '../../mod/habblaud-antigravity/hook.mjs');
+  const run = (event: string) => new Promise<unknown>((done, fail) => {
+    const child = spawn(process.execPath, [hook, event, String(port)], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '';
+    child.stdout.on('data', (data) => { output += data; });
+    child.on('error', fail);
+    child.on('exit', (code) => code === 0 ? done(JSON.parse(output)) : fail(new Error('hook failed')));
+    child.stdin.end('{}');
+  });
+  try {
+    expect(await run('PreInvocation')).toEqual({});
+    expect(await run('PostInvocation')).toEqual({});
+    expect(await run('PreToolUse')).toEqual({ decision: 'allow' });
+    expect(await run('Stop')).toEqual({});
+    ok = false;
+    expect(await run('PostInvocation')).toEqual({});
+  } finally { await new Promise<void>((done) => server.close(() => done())); }
+}, 20_000);
+
 it('leaves approval to Antigravity default policy even if the office is offline or input is malformed', () => {
   const hook = resolve(import.meta.dirname, '../../mod/habblaud-antigravity/hook.mjs');
   for (const input of ['not JSON', JSON.stringify({ conversationId: 'test', workspacePaths: ['/project'] })]) {
@@ -122,4 +149,4 @@ it.skipIf(process.platform !== 'win32')('executes the Windows command with space
     });
     expect(JSON.parse(output)).toEqual({ args: ['Stop', '4848'], input });
   } finally { rmSync(home, { recursive: true, force: true }); }
-});
+}, 20_000);

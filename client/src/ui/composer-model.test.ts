@@ -43,6 +43,17 @@ function agent(over: Partial<AgentInfo> = {}): AgentInfo {
 
 const ON: ComposerEnv = { enabled: true, local: true, replaying: false };
 
+it('enables Antigravity Desktop messages in active and idle sessions with local access', () => {
+  const agy = agent({ provider: 'antigravity', status: 'working' });
+  expect(composerMode(agy, ON)).toEqual({ kind: 'ready' });
+  expect(composerMode({ ...agy, status: 'idle' }, ON).kind).toBe('ready');
+  expect(composerMode({ ...agy, canMessage: false }, ON).kind).toBe('hint');
+  expect(composerMode(agy, { ...ON, local: false }).kind).toBe('off');
+  expect(composerMode(agy, { ...ON, enabled: false }).kind).toBe('off');
+  expect(composerTip('antigravity')).toMatch(/Antigravity Desktop/);
+  expect(sendStatusText({ phase: 'delivered', at: 0 }, 100, 'antigravity')).toMatch(/Antigravity/);
+});
+
 describe('caixa de mensagem (peças puras)', () => {
   it('composerMode: pronta só para principal presente com o plugin, recurso ligado e página local', () => {
     expect(composerMode(agent(), ON)).toEqual({ kind: 'ready' });

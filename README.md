@@ -1064,9 +1064,12 @@ working, note the changes under "Não lançado" (Unreleased). To release:
 1. Bump the number with `npm version minor --no-git-tag-version` (or `patch`, for a bug-fix-only version).
 2. Replace "Não lançado" with the version and the date (`## [0.3.0] - AAAA-MM-DD`), leave an empty "Não lançado" above it and
    update the links at the end. `npm test` fails if the `package.json` version doesn't have a section.
-3. Merge into `main` and run `npm run release` (it needs an authenticated [`gh`](https://cli.github.com/); `-- --dry-run`
-   only shows the notes). The script creates the `v0.3.0` tag and the release with the section's text. From then on, Habblaud
-   users see the **New version** badge.
+3. Merge into `main` and run `npm run release` (`-- --dry-run` only checks and shows the notes).
+   The script pushes the version tag. The [Release workflow](.github/workflows/release.yml) runs Linux tests,
+   Windows integration tests, builds and checks the Vietnamese EXE, then publishes the release with its EXE,
+   SHA-256, Vietnamese instructions and build metadata. Failed checks prevent publication. Tags containing
+   a prerelease suffix, such as `v1.1.0-rc.1`, create a GitHub prerelease. An existing tag can be retried with
+   **Actions → Release → Run workflow**; published releases are preserved.
 
 ## Troubleshooting
 

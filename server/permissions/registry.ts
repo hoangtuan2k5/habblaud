@@ -24,6 +24,7 @@ import { toolView } from '../sources/terminal';
 import { codexToolView } from './codex';
 import { callSignature, scanToolCall } from './transcript';
 import { tr } from '../../shared/i18n';
+import { desktopQuestions, type AntigravityDesktop, type DesktopPermission } from '../sources/antigravity/desktop';
 
 /** Tempo que o hook espera por padrão (ele manda o próprio em `timeout_ms`). */
 export const DEFAULT_TIMEOUT_MS = 300_000;
@@ -67,6 +68,7 @@ export interface OfficeLike {
 }
 
 export interface RegistryOptions {
+  antigravity?: Pick<AntigravityDesktop, 'pending' | 'decidePermission'>;
   office: OfficeLike;
   /** Páginas locais conectadas (Hub.localSize): sem nenhuma, o pedido não é desviado do terminal. */
   viewers: () => number;
@@ -343,6 +345,11 @@ export function parseDecision(raw: unknown): PermissionDecision | undefined {
 }
 
 export class PermissionRegistry {
+  private native = new Map<string, { request: DesktopPermission; info: PermissionRequestInfo; busy?: boolean }>();
+  private nativeDismissed = new Set<string>();
+  private nativePolling = false;
+  private nativePollAt = -Infinity;
+  private stopped = false;
   private pending = new Map<string, Pending>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private seq = 0;
@@ -362,6 +369,7 @@ export class PermissionRegistry {
 
   start(): void {
     if (this.timer) return;
+    this.stopped = false;
     this.timer = setInterval(() => {
       try {
         this.tick();
@@ -374,6 +382,8 @@ export class PermissionRegistry {
 
   /** Para o relógio e libera quem estiver esperando (o hook sai sem decidir). */
   stop(): void {
+    this.stopped = true;
+    this.native.clear();
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     for (const p of this.pending.values()) if (!p.outcome) this.release(p, 'shutdown');
@@ -381,7 +391,7 @@ export class PermissionRegistry {
 
   /** Pedidos em aberto (sem decisão). */
   get size(): number {
-    let n = 0;
+    let n = this.native.size;
     for (const p of this.pending.values()) if (!p.outcome) n++;
     return n;
   }
@@ -449,6 +459,8 @@ export class PermissionRegistry {
 
   /** Detalhe completo de um pedido em aberto (com os argumentos), ou undefined. */
   detail(id: string): PermissionRequestInfo | undefined {
+    const native = this.native.get(id);
+    if (native) return native.info;
     const p = this.pending.get(id);
     if (p && !p.outcome) return { ...p.info, ...this.queueOf(p) };
     return this.opts.demoDetail?.(id);
@@ -472,7 +484,66 @@ export class PermissionRegistry {
       const n = (counts.get(agentId) ?? 1) - 1;
       if (n > 0) info.queued = n;
     }
+    for (const { request, info } of this.native.values()) {
+      const agentId = `antigravity:${request.conversationId}`;
+      const first = out.get(agentId);
+      if (first) first.queued = (first.queued ?? 0) + 1;
+      else { const { input: _input, ...short } = info; out.set(agentId, short); }
+    }
     return out;
+  }
+
+  async respond(id: string, d: PermissionDecision): Promise<DecideResult> {
+    const entry = this.native.get(id);
+    if (!entry) return this.decide(id, d);
+    if (entry.busy) return 'conflict';
+    if (d.interrupt || d.suggestion !== undefined
+      || (entry.request.kind !== 'permission' && d.message)) return 'unsupported';
+    if (wrongKind(entry.info, d) || (d.behavior === 'answer' && !checkAnswers(entry.info.questions ?? [], d.answers))) return 'invalid-answer';
+    if (d.behavior === 'terminal') {
+      this.nativeDismissed.add(id);
+      this.native.delete(id);
+      this.opts.office.markDirty();
+      return 'ok';
+    }
+    entry.busy = true;
+    try {
+      if (!await this.opts.antigravity!.decidePermission(entry.request, d)) return 'conflict';
+      this.native.delete(id);
+      this.nativeDismissed.add(id);
+      this.opts.office.markDirty();
+      return 'ok';
+    } finally { entry.busy = false; }
+  }
+
+  private async pollNative(): Promise<void> {
+    if (!this.opts.antigravity || this.nativePolling || this.stopped || this.opts.viewers() <= 0 || this.now() - this.nativePollAt < 2000) return;
+    this.nativePolling = true;
+    this.nativePollAt = this.now();
+    try {
+      const ids = this.opts.office.list().filter(a => a.provider === 'antigravity' && present(a)).map(a => a.sessionId);
+      const requests = ids.length ? await this.opts.antigravity.pending(ids) : [];
+      if (this.stopped) return;
+      const current = new Set(requests.map(r => r.id));
+      for (const id of this.nativeDismissed) if (!current.has(id)) this.nativeDismissed.delete(id);
+      let changed = false;
+      for (const id of this.native.keys()) if (!current.has(id)) { this.native.delete(id); changed = true; }
+      for (const request of requests.slice(0, this.maxPending)) {
+        if (this.native.has(request.id) || this.nativeDismissed.has(request.id)) continue;
+        const input = truncate(maskSecrets(request.input), 20_000);
+        const tool = truncate(maskSecrets(request.tool), 100);
+        const info: PermissionRequestInfo = { id: request.id, provider: 'antigravity', tool, title: tool,
+          text: truncate(input, 160), input, inputKind: 'command', icon: '🔐', createdAt: this.now(), expiresAt: this.now() + MAX_TIMEOUT_MS };
+        if (request.kind === 'askQuestion') info.questions = desktopQuestions(request);
+        this.native.set(request.id, { request, info });
+        this.opts.office.noticePermission(`antigravity:${request.conversationId}`, info.text);
+        changed = true;
+      }
+      if (changed) this.opts.office.markDirty();
+    } catch {
+      // Keep approval authority in Desktop; a failed read never grants permission.
+      if (this.native.size) { this.native.clear(); this.opts.office.markDirty(); }
+    } finally { this.nativePolling = false; }
   }
 
   /**
@@ -546,6 +617,7 @@ export class PermissionRegistry {
 
   /** Relógio: expiração, órfãos, agente que saiu, resposta no terminal e limpeza das decisões entregues. */
   tick(): void {
+    void this.pollNative();
     const now = this.now();
     this.unwatchedSince = this.opts.viewers() > 0 ? null : (this.unwatchedSince ?? now);
     const unwatched = this.unwatchedSince !== null && now - this.unwatchedSince >= UNWATCHED_MS && !this.opts.answerLater?.();

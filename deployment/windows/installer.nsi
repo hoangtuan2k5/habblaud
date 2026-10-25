@@ -50,7 +50,7 @@ Section "$(AppSection)" Main
     Abort
   stopped:
   SetOutPath "$INSTDIR"
-  File /r "${PAYLOAD}/*"
+  File /r "${PAYLOAD}\*"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\Habblaud"
   CreateShortcut "$SMPROGRAMS\Habblaud\Habblaud.lnk" "$SYSDIR\wscript.exe" '"$INSTDIR\launch.vbs" Open'

@@ -38,6 +38,11 @@ function agent(id: string, permission?: Partial<PermissionRequestInfo>, status: 
 }
 
 describe('responder pelo escritório (peças puras)', () => {
+  it('Antigravity keeps explicit one-request decisions and renders native questions', () => {
+    expect(permissionOptions({ provider: 'antigravity', suggestions: [{ index: 0, rules: ['fixture'], destination: 'session' }] }, { kind: 'main' }))
+      .toMatchObject({ always: false, interrupt: false, reasonRequired: false });
+    expect(isQuestionRequest({ provider: 'antigravity', tool: 'AskUserQuestion', questions: [{ index: 0, question: 'Fixture', options: [] }] })).toBe(true);
+  });
   it('expiryText: quanto falta para o pedido voltar ao terminal', () => {
     expect(expiryText(10 * 60_000, 0)).toBe('volta ao terminal em 10 min');
     expect(expiryText(30_000, 0)).toBe('volta ao terminal em menos de 1 min');
